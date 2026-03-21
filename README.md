@@ -1,2 +1,0 @@
-# eggplant
-eggplant games portal
