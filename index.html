@@ -164,12 +164,39 @@ const ADMIN_PASS='eggplant42'; // Change this!
 let games=[...BUILTIN];
 let activeF='ALL',curGame=null,pendScore=null,adminAuth=false;
 
-// ═══ STORAGE ═══
-async function gScores(gid){try{const r=await window.storage.get('sc_'+gid,true);return r?JSON.parse(r.value):[]}catch(e){return[]}}
-async function sScores(gid,sc){try{await window.storage.set('sc_'+gid,JSON.stringify(sc),true)}catch(e){}}
-async function addSc(gid,name,sc){const s=await gScores(gid);s.push({name:name.toUpperCase().slice(0,3),score:sc,date:Date.now()});s.sort((a,b)=>b.score-a.score);if(s.length>20)s.length=20;await sScores(gid,s);return s}
-async function loadCustomGames(){try{const r=await window.storage.get('custom_games');if(r){const cg=JSON.parse(r.value);games=[...BUILTIN,...cg]}}catch(e){}}
-async function saveCustomGames(){const custom=games.filter(g=>!BUILTIN.find(b=>b.id===g.id));try{await window.storage.set('custom_games',JSON.stringify(custom))}catch(e){}}
+// ═══ SUPABASE CONFIG ═══
+const SB_URL='https://vrvgtpphvduvbygsadmp.supabase.co';
+const SB_KEY='sb_publishable_NceAGvpphaPNB3v62Poc3w_6egvGoII';
+const SB_HDR={'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+
+// ═══ SUPABASE STORAGE ═══
+async function gScores(gid){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/scores?game_id=eq.${gid}&order=score.desc&limit=20`,{headers:SB_HDR});
+    if(!r.ok)throw new Error(r.status);
+    const data=await r.json();
+    return data.map(s=>({name:s.player_name,score:s.score,date:s.created_at}));
+  }catch(e){console.warn('Scores fetch failed:',e);return[]}
+}
+
+async function addSc(gid,name,sc){
+  try{
+    await fetch(`${SB_URL}/rest/v1/scores`,{
+      method:'POST',headers:{...SB_HDR,'Prefer':'return=minimal'},
+      body:JSON.stringify({game_id:gid,player_name:name.toUpperCase().slice(0,3),score:sc})
+    });
+  }catch(e){console.warn('Score submit failed:',e)}
+  return gScores(gid);
+}
+
+// Custom games — still use localStorage as fallback (admin-only, not critical)
+async function loadCustomGames(){
+  try{const raw=localStorage.getItem('ep_custom_games');if(raw){const cg=JSON.parse(raw);games=[...BUILTIN,...cg]}}catch(e){}
+}
+async function saveCustomGames(){
+  const custom=games.filter(g=>!BUILTIN.find(b=>b.id===g.id));
+  try{localStorage.setItem('ep_custom_games',JSON.stringify(custom))}catch(e){}
+}
 
 // ═══ CATEGORIES ═══
 function getCats(){const c=new Set();c.add('ALL');games.forEach(g=>c.add(g.genre.toUpperCase()));return[...c]}
