@@ -35,8 +35,10 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,20,.85);backdrop-
 .gc{background:var(--card);border:1px solid rgba(255,255,255,.04);border-radius:4px;overflow:hidden;cursor:pointer;transition:all .3s;position:relative;animation:ci .4s ease-out backwards}
 .gc:hover{border-color:rgba(224,64,251,.2);transform:translateY(-3px);box-shadow:0 8px 30px rgba(224,64,251,.06)}
 @keyframes ci{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.ca{height:120px;position:relative;overflow:hidden}
+.ca{height:120px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-direction:column}
 .cg{position:absolute;inset:0}
+.card-icon{position:relative;font-size:2.2rem;z-index:1;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));margin-bottom:2px}
+.card-art{position:relative;font-size:.6rem;letter-spacing:.3em;color:rgba(255,255,255,.15);z-index:1}
 .ct{position:absolute;top:8px;right:8px;font-size:.5rem;letter-spacing:.12em;padding:2px 8px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);color:var(--t2);border-radius:2px;backdrop-filter:blur(8px)}
 .cb{padding:12px 14px 14px}
 .cn{font-family:Audiowide;font-size:.8rem;letter-spacing:.08em;margin-bottom:3px}
@@ -44,6 +46,9 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,20,.85);backdrop-
 .cf{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
 .cp{font-size:.55rem;letter-spacing:.2em;color:var(--n2);font-weight:700;text-shadow:0 0 8px rgba(0,229,255,.3)}
 .cs{font-size:.5rem;color:var(--t3);letter-spacing:.1em;cursor:pointer}.cs:hover{color:var(--n1)}
+.mob{position:absolute;top:8px;left:8px;font-size:.45rem;letter-spacing:.1em;padding:2px 7px;border-radius:2px;backdrop-filter:blur(8px)}
+.mob.yes{background:rgba(118,255,3,.12);border:1px solid rgba(118,255,3,.2);color:#76ff03}
+.mob.no{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06);color:#505068}
 
 #player{position:fixed;inset:0;z-index:200;display:none;flex-direction:column;background:var(--bg)}
 .pb{height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:rgba(10,10,20,.95);border-bottom:1px solid rgba(224,64,251,.1)}
@@ -153,12 +158,12 @@ footer{max-width:1200px;margin:0 auto;padding:16px clamp(16px,4vw,40px) 30px;bor
 // GAME REGISTRY — add games here
 // ═══════════════════════════════════════
 const BUILTIN=[
-{id:'defense',name:'DEFENSE',file:'games/defense.html',genre:'Rhythm',desc:'Beat-synced rhythm survival. Tap to destroy lines on the beat.',colors:['#06060c','#0a1a2a','#1a0a2a'],accent:'#00e5ff',hasScore:true},
-{id:'bitter',name:'THE BITTER',file:'games/the-bitter.html',genre:'Horror',desc:'First-person stealth horror. Three creatures. One school. Hide or die.',colors:['#1a0a0a','#8b0000','#2a1a0a'],accent:'#cc1100',hasScore:false},
-{id:'allfather',name:'THE ALLFATHER',file:'games/the-allfather.html',genre:'Survival',desc:'Five days in the woods. Fortify your cabin. Survive the Allfather.',colors:['#0a1a0a','#2a3a18','#1a1008'],accent:'#8a7a60',hasScore:false},
-{id:'reflex',name:'REFLEX',file:'games/reflex-trainer.html',genre:'Training',desc:'Reaction time trainer. Test your reflexes across multiple rounds.',colors:['#0a1410','#0a2018','#081a12'],accent:'#00e5a0',hasScore:true},
-{id:'pawpatrol',name:'PAW PATROL',file:'games/paw-patrol-game.html',genre:'Arcade',desc:'Catch the mice! Colourful arcade action for all ages.',colors:['#1a1008','#2a1810','#0a0a18'],accent:'#f4845f',hasScore:true},
-{id:'astrosprint',name:'ASTRO SPRINT',file:'games/astro-sprint.html',genre:'Platformer',desc:'Endless space platformer. Run, jump, shoot aliens. How far can you go?',colors:['#08080e','#0a1020','#1a0a20'],accent:'#60c0ff',hasScore:true},
+{id:'defense',name:'DEFENSE',file:'games/defense.html',genre:'Rhythm',desc:'Beat-synced rhythm survival. Tap to destroy lines on the beat.',colors:['#06060c','#0a1a2a','#1a0a2a'],accent:'#00e5ff',hasScore:true,mobile:true,icon:'🎯',art:'⟡ ─── ⟡ ─── ⟡'},
+{id:'bitter',name:'THE BITTER',file:'games/the-bitter.html',genre:'Horror',desc:'First-person stealth horror. Three creatures. One school. Hide or die.',colors:['#1a0a0a','#8b0000','#2a1a0a'],accent:'#cc1100',hasScore:false,mobile:false,icon:'👁️',art:'▓░▓░▓░▓░▓░▓'},
+{id:'allfather',name:'THE ALLFATHER',file:'games/the-allfather.html',genre:'Survival',desc:'Five days in the woods. Fortify your cabin. Survive the Allfather.',colors:['#0a1a0a','#2a3a18','#1a1008'],accent:'#8a7a60',hasScore:false,mobile:false,icon:'🏚️',art:'🌲🌲🏚️🌲🌲'},
+{id:'reflex',name:'REFLEX',file:'games/reflex-trainer.html',genre:'Training',desc:'Reaction time trainer. Test your reflexes across multiple rounds.',colors:['#0a1410','#0a2018','#081a12'],accent:'#00e5a0',hasScore:true,mobile:true,icon:'⚡',art:'● ● ● ● ●'},
+{id:'pawpatrol',name:'PAW PATROL',file:'games/paw-patrol-game.html',genre:'Arcade',desc:'Catch the mice! Colourful arcade action for all ages.',colors:['#1a1008','#2a1810','#0a0a18'],accent:'#f4845f',hasScore:true,mobile:false,icon:'🐾',art:'🐾 🐭 🐾 🐭 🐾'},
+{id:'astrosprint',name:'ASTRO SPRINT',file:'games/astro-sprint.html',genre:'Platformer',desc:'Endless space platformer. Run, jump, shoot aliens. How far can you go?',colors:['#08080e','#0a1020','#1a0a20'],accent:'#60c0ff',hasScore:true,mobile:false,icon:'🚀',art:'✦ · 🚀 · ✦'},
 ];
 
 const ADMIN_PASS='eggplant42'; // Change this!
@@ -173,7 +178,7 @@ const SB_HDR={'Content-Type':'application/json','apikey':SB_KEY};
 // ═══ SUPABASE STORAGE ═══
 async function gScores(gid){
   try{
-    const r=await fetch(`${SB_URL}/rest/v1/scores?game_id=eq.${gid}&order=score.desc&limit=20`,{headers:SB_HDR});
+    const r=await fetch(`${SB_URL}/rest/v1/scores?game_id=eq.${gid}&order=score.desc&limit=5`,{headers:SB_HDR});
     if(!r.ok){console.warn('Scores fetch:',r.status,await r.text());return[]}
     const data=await r.json();
     return data.map(s=>({name:s.player_name,score:s.score,date:s.created_at}));
@@ -209,8 +214,12 @@ function rGrid(){
   const f=activeF==='ALL'?games:games.filter(g=>g.genre.toUpperCase()===activeF);
   document.getElementById('gg').innerHTML=f.map((g,i)=>{
     const grad=g.colors?`linear-gradient(135deg,${g.colors[0]||'#111'},${g.colors[1]||'#222'},${g.colors[2]||'#111'})`:`linear-gradient(135deg,#111,#222)`;
+    const mobBadge=g.mobile?'<div class="mob yes">📱 MOBILE</div>':'<div class="mob no">🖥 DESKTOP</div>';
     return`<div class="gc" style="animation-delay:${i*.05}s" onclick="playG('${g.id}')">
-<div class="ca"><div class="cg" style="background:${grad}"></div><div class="ct">${(g.genre||'GAME').toUpperCase()}</div></div>
+<div class="ca"><div class="cg" style="background:${grad}"></div>
+<div class="card-icon">${g.icon||'🎮'}</div>
+<div class="card-art">${g.art||''}</div>
+${mobBadge}<div class="ct">${(g.genre||'GAME').toUpperCase()}</div></div>
 <div class="cb"><div class="cn" style="color:${g.accent||'#ccc'}">${g.name}</div><div class="cd">${g.desc||''}</div>
 <div class="cf"><div class="cp">▶ PLAY</div>${g.hasScore?`<div class="cs" onclick="event.stopPropagation();oLB('${g.id}')">🏆 SCORES</div>`:''}</div></div></div>`}).join('');
 }
@@ -233,7 +242,7 @@ async function rAllS(){
     if(!g.hasScore)continue;
     const s=await gScores(g.id);
     h+=`<div style="margin-bottom:20px"><div style="font-family:Audiowide;font-size:.75rem;letter-spacing:.08em;color:${g.accent||'#ccc'};margin-bottom:6px">${g.name}</div>
-${s.length?s.slice(0,10).map((sc,i)=>`<div class="lr"><div class="lrk${i===0?' g':i===1?' s':i===2?' b':''}">${String(i+1).padStart(2,'0')}</div><div class="lrn">${sc.name}</div><div class="lrs">${sc.score.toLocaleString()}</div></div>`).join(''):'<div class="le">NO SCORES YET</div>'}</div>`;
+${s.length?s.slice(0,5).map((sc,i)=>`<div class="lr"><div class="lrk${i===0?' g':i===1?' s':i===2?' b':''}">${String(i+1).padStart(2,'0')}</div><div class="lrn">${sc.name}</div><div class="lrs">${sc.score.toLocaleString()}</div></div>`).join(''):'<div class="le">NO SCORES YET</div>'}</div>`;
   }
   if(!h)h='<div class="le">NO SCORED GAMES YET</div>';
   document.getElementById('allS').innerHTML=h;
@@ -245,25 +254,32 @@ document.getElementById('pT').textContent=g.name;document.getElementById('gF').s
 document.getElementById('player').style.display='flex';document.body.style.overflow='hidden'}
 function exitG(){document.getElementById('gF').src='about:blank';document.getElementById('player').style.display='none';document.body.style.overflow='';curGame=null}
 
-// Score from games via postMessage
+// Score from games via postMessage (debounced — ignore rapid duplicates)
+let lastScoreTime=0,submitting=false;
 window.addEventListener('message',async(e)=>{
   if(e.data&&e.data.type==='eggplant_score'&&curGame&&curGame.hasScore){
+    const now=Date.now();
+    if(now-lastScoreTime<3000)return; // ignore if within 3s of last score
+    lastScoreTime=now;
     pendScore={gid:curGame.id,score:e.data.score};exitG();
     document.getElementById('sSc').textContent=e.data.score.toLocaleString();
     document.getElementById('sNm').value='';
     document.getElementById('sM').style.display='flex';
+    submitting=false;
     setTimeout(()=>document.getElementById('sNm').focus(),100);
   }
 });
-async function doSub(){if(!pendScore)return;const nm=document.getElementById('sNm').value.trim()||'???';
-await addSc(pendScore.gid,nm,pendScore.score);pendScore=null;document.getElementById('sM').style.display='none'}
+async function doSub(){if(!pendScore||submitting)return;submitting=true;
+const nm=document.getElementById('sNm').value.trim()||'???';
+await addSc(pendScore.gid,nm,pendScore.score);pendScore=null;submitting=false;
+document.getElementById('sM').style.display='none'}
 function cSub(){pendScore=null;document.getElementById('sM').style.display='none'}
 
 // ═══ LEADERBOARD MODAL ═══
 async function oLB(gid){const g=games.find(x=>x.id===gid);if(!g)return;
 const s=await gScores(gid);
 document.getElementById('lbT').textContent=g.name+' — TOP SCORES';document.getElementById('lbT').style.color=g.accent||'#ccc';
-document.getElementById('lbB').innerHTML=s.length?s.slice(0,10).map((sc,i)=>`<div class="lr"><div class="lrk${i===0?' g':i===1?' s':i===2?' b':''}">${String(i+1).padStart(2,'0')}</div><div class="lrn">${sc.name}</div><div class="lrs">${sc.score.toLocaleString()}</div></div>`).join(''):'<div class="le">NO SCORES YET — BE THE FIRST</div>';
+document.getElementById('lbB').innerHTML=s.length?s.slice(0,5).map((sc,i)=>`<div class="lr"><div class="lrk${i===0?' g':i===1?' s':i===2?' b':''}">${String(i+1).padStart(2,'0')}</div><div class="lrn">${sc.name}</div><div class="lrs">${sc.score.toLocaleString()}</div></div>`).join(''):'<div class="le">NO SCORES YET — BE THE FIRST</div>';
 document.getElementById('lbM').style.display='flex'}
 function cLB(){document.getElementById('lbM').style.display='none'}
 
