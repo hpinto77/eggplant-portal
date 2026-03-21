@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paw Patrol – Catch the Mice!</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Lilita+One&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #1a1118;
+  --corridor: #3a2a2e;
+  --corridor-light: #4d3a3f;
+  --paw-left: #f4845f;
+  --paw-right: #7ec8e3;
+  --gold: #ffd166;
+  --mouse-body: #b0a090;
+  --accent: #ef476f;
+  --green: #06d6a0;
+  --text: #fef9ef;
+  --dim: #8a7a7e;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  font-family: 'Fredoka', sans-serif;
+  color: var(--text);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── MENU ── */
+#menu {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 100;
+  background: radial-gradient(ellipse at 50% 40%, #2e1f28 0%, #1a1118 70%);
+}
+
+#menu.hidden { display: none; }
+
+.menu-title {
+  font-family: 'Lilita One', sans-serif;
+  font-size: clamp(2.8rem, 7vw, 5rem);
+  color: var(--gold);
+  text-shadow: 0 4px 0 #b8860b, 0 6px 20px rgba(255,209,102,.3);
+  margin-bottom: .15em;
+  letter-spacing: 2px;
+  animation: titleBounce 2s ease-in-out infinite;
+}
+
+@keyframes titleBounce {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.menu-subtitle {
+  font-size: 1.1rem; color: var(--dim);
+  margin-bottom: 2.5rem;
+  letter-spacing: 1px;
+}
+
+.menu-paws {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  animation: pawWiggle 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pawWiggle {
+  0% { transform: rotate(-8deg); }
+  100% { transform: rotate(8deg); }
+}
+
+.menu-section {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  padding: 1.8rem 2.4rem;
+  margin-bottom: 1.2rem;
+  width: min(420px, 90vw);
+  backdrop-filter: blur(10px);
+}
+
+.menu-section h3 {
+  font-size: .85rem;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--dim);
+  margin-bottom: 1rem;
+}
+
+.option-row {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: .7rem;
+  font-size: .95rem;
+}
+
+.option-row label { color: var(--text); }
+
+.toggle-group {
+  display: flex; gap: 4px;
+  background: rgba(0,0,0,.3);
+  border-radius: 10px; padding: 3px;
+}
+
+.toggle-btn {
+  padding: 6px 14px;
+  border: none; border-radius: 8px;
+  background: transparent;
+  color: var(--dim);
+  font-family: 'Fredoka', sans-serif;
+  font-size: .85rem;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(239,71,111,.4);
+}
+
+.btn {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  border: none; border-radius: 14px;
+  font-family: 'Lilita One', sans-serif;
+  font-size: 1.3rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all .2s;
+  margin-top: .5rem;
+}
+
+.btn-solo {
+  background: linear-gradient(135deg, var(--paw-left), #e05533);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(244,132,95,.4);
+}
+
+.btn-duo {
+  background: linear-gradient(135deg, var(--paw-right), #5ba3c9);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(126,200,227,.4);
+}
+
+.btn:hover { transform: translateY(-2px) scale(1.02); filter: brightness(1.1); }
+.btn:active { transform: translateY(1px) scale(.98); }
+
+.key-hint {
+  display: inline-block;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: .8rem;
+  font-family: monospace;
+  margin-left: 4px;
+}
+
+/* ── GAME HUD ── */
+#hud {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: linear-gradient(180deg, rgba(0,0,0,.6) 0%, transparent 100%);
+  z-index: 50;
+  font-size: .95rem;
+}
+
+#hud.hidden { display: none; }
+
+.hud-left, .hud-right, .hud-center { display: flex; align-items: center; gap: 16px; }
+
+.score-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.score-p1 { background: rgba(244,132,95,.25); border: 1px solid rgba(244,132,95,.4); }
+.score-p2 { background: rgba(126,200,227,.25); border: 1px solid rgba(126,200,227,.4); }
+
+.lives-display { display: flex; gap: 3px; font-size: 1.1rem; }
+.level-badge { color: var(--gold); font-weight: 600; }
+
+#pauseBtn {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 4px 12px;
+  font-family: 'Fredoka', sans-serif;
+  cursor: pointer;
+  font-size: .85rem;
+}
+
+/* ── GAME CANVAS ── */
+#gameCanvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+
+/* ── GAME OVER OVERLAY ── */
+#gameOver {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(10,5,10,.85);
+  backdrop-filter: blur(6px);
+  z-index: 90;
+}
+
+#gameOver.hidden { display: none; }
+
+.go-title {
+  font-family: 'Lilita One', sans-serif;
+  font-size: 3rem;
+  color: var(--accent);
+  margin-bottom: .5rem;
+}
+
+.go-stats {
+  font-size: 1.1rem;
+  color: var(--dim);
+  margin-bottom: .3rem;
+}
+
+.go-score {
+  font-size: 2rem;
+  color: var(--gold);
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.go-winner {
+  font-size: 1.4rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+</style>
+</head>
+<body>
+
+<!-- MENU -->
+<div id="menu">
+  <div class="menu-paws">🐾</div>
+  <div class="menu-title">PAW PATROL</div>
+  <div class="menu-subtitle">Catch the mice before they escape!</div>
+
+  <div class="menu-section">
+    <h3>Options</h3>
+    <div class="option-row">
+      <label>Difficulty</label>
+      <div class="toggle-group" data-option="difficulty">
+        <button class="toggle-btn" data-val="easy">Easy</button>
+        <button class="toggle-btn active" data-val="normal">Normal</button>
+        <button class="toggle-btn" data-val="hard">Hard</button>
+      </div>
+    </div>
+    <div class="option-row">
+      <label>Mouse Speed</label>
+      <div class="toggle-group" data-option="speed">
+        <button class="toggle-btn" data-val="slow">Slow</button>
+        <button class="toggle-btn active" data-val="normal">Normal</button>
+        <button class="toggle-btn" data-val="fast">Fast</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-section">
+    <h3>Controls</h3>
+    <div class="option-row">
+      <label>🐾 Left Paw</label>
+      <span><span class="key-hint">A</span> or <span class="key-hint">←</span></span>
+    </div>
+    <div class="option-row">
+      <label>🐾 Right Paw</label>
+      <span><span class="key-hint">D</span> or <span class="key-hint">→</span></span>
+    </div>
+    <div class="option-row" style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
+      <label>👤 Player 2: Left</label>
+      <span><span class="key-hint">J</span></span>
+    </div>
+    <div class="option-row">
+      <label>👤 Player 2: Right</label>
+      <span><span class="key-hint">L</span></span>
+    </div>
+  </div>
+
+  <div class="menu-section" style="padding-top:1rem; padding-bottom:1rem;">
+    <button class="btn btn-solo" id="btnSolo">🐱  Solo Mode</button>
+    <button class="btn btn-duo" id="btnDuo" style="margin-top:.6rem;">🐱🐱  Two Player Duel</button>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div class="hud-left">
+    <div class="score-badge score-p1">🐾 <span id="scoreP1">0</span></div>
+    <div class="score-badge score-p2 hidden" id="p2Badge">🐾 <span id="scoreP2">0</span></div>
+  </div>
+  <div class="hud-center">
+    <span class="level-badge">Level <span id="levelNum">1</span></span>
+  </div>
+  <div class="hud-right">
+    <div class="lives-display" id="livesDisplay">❤️❤️❤️</div>
+    <button id="pauseBtn" onclick="togglePause()">⏸</button>
+  </div>
+</div>
+
+<!-- GAME OVER -->
+<div id="gameOver" class="hidden">
+  <div class="go-title">GAME OVER</div>
+  <div class="go-stats" id="goStats"></div>
+  <div class="go-score" id="goScore"></div>
+  <div class="go-winner hidden" id="goWinner"></div>
+  <button class="btn btn-solo" onclick="backToMenu()" style="width:220px;">Back to Menu</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+// ── STATE ──
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+let gameRunning = false, paused = false, twoPlayer = false;
+let options = { difficulty: 'normal', speed: 'normal' };
+let mice = [], paws = { left: null, right: null };
+let scores = [0, 0], lives = 3, level = 1;
+let spawnTimer = 0, spawnInterval = 0;
+let miceEscaped = 0, miceCaught = 0;
+let corridorTop, corridorBot, corridorH;
+let pawAnimLeft = 0, pawAnimRight = 0;
+let particles = [];
+let lastTime = 0;
+
+// Corridor layout
+const CORRIDOR_Y_RATIO = 0.35;
+const CORRIDOR_H_RATIO = 0.32;
+const PAW_REACH = 0.5; // each paw covers 50% of corridor width
+const PAW_OVERLAP = 0.0; // no overlap
+
+// ── RESIZE ──
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  corridorTop = H * CORRIDOR_Y_RATIO;
+  corridorH = H * CORRIDOR_H_RATIO;
+  corridorBot = corridorTop + corridorH;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ── MENU LOGIC ──
+document.querySelectorAll('.toggle-group').forEach(group => {
+  group.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      options[group.dataset.option] = btn.dataset.val;
+    });
+  });
+});
+
+document.getElementById('btnSolo').addEventListener('click', () => startGame(false));
+document.getElementById('btnDuo').addEventListener('click', () => startGame(true));
+
+// ── GAME START ──
+function startGame(duo) {
+  twoPlayer = duo;
+  scores = [0, 0];
+  lives = duo ? 5 : 3;
+  level = 1;
+  mice = [];
+  particles = [];
+  miceEscaped = 0;
+  miceCaught = 0;
+  pawAnimLeft = 0;
+  pawAnimRight = 0;
+  gameRunning = true;
+  paused = false;
+  spawnTimer = 0;
+  updateSpawnRate();
+
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('gameOver').classList.add('hidden');
+  document.getElementById('hud').classList.remove('hidden');
+  document.getElementById('p2Badge').classList.toggle('hidden', !duo);
+  updateHUD();
+  lastTime = performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+function updateSpawnRate() {
+  const baseMult = { easy: 1.6, normal: 1.0, hard: 0.65 }[options.difficulty];
+  spawnInterval = Math.max(300, 2000 * baseMult - (level - 1) * 120 * baseMult);
+}
+
+function getMouseSpeed() {
+  const base = { slow: 80, normal: 140, fast: 210 }[options.speed];
+  return base + (level - 1) * 12 + Math.random() * 30;
+}
+
+// ── MOUSE SPAWNING ──
+function spawnMouse() {
+  const fromLeft = Math.random() < 0.5;
+  const laneCount = Math.max(2, Math.min(5, 1 + level));
+  const lane = Math.floor(Math.random() * laneCount);
+  const laneH = corridorH / laneCount;
+  const y = corridorTop + lane * laneH + laneH * 0.5;
+  const speed = getMouseSpeed();
+  const size = 18 + Math.random() * 8;
+
+  // Wiggle and color variation
+  const hue = 25 + Math.random() * 20;
+  const light = 55 + Math.random() * 15;
+
+  mice.push({
+    x: fromLeft ? -30 : W + 30,
+    y,
+    speed: fromLeft ? speed : -speed,
+    size,
+    color: `hsl(${hue}, 25%, ${light}%)`,
+    tailPhase: Math.random() * Math.PI * 2,
+    wiggle: 0,
+    caught: false,
+    escaping: false
+  });
+}
+
+// ── INPUT ──
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
+  if (!gameRunning || paused) return;
+
+  // Left paw: A or ArrowLeft (P1 in solo, P1 in duo)
+  if (e.key.toLowerCase() === 'a' || e.key === 'ArrowLeft') {
+    swipePaw('left', twoPlayer ? 0 : -1);
+  }
+  // Right paw: D or ArrowRight (P1 in solo, P1 in duo for right side)
+  if (e.key.toLowerCase() === 'd' || e.key === 'ArrowRight') {
+    swipePaw('right', twoPlayer ? 0 : -1);
+  }
+  // P2 controls in duo
+  if (twoPlayer) {
+    if (e.key.toLowerCase() === 'j') swipePaw('left', 1);
+    if (e.key.toLowerCase() === 'l') swipePaw('right', 1);
+  }
+
+  if (e.key === 'Escape') togglePause();
+});
+window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+function swipePaw(side, player) {
+  if (side === 'left') pawAnimLeft = 1;
+  else pawAnimRight = 1;
+
+  const pawLeft = 0;
+  const pawRight = W * PAW_REACH;
+  const zoneStart = side === 'left' ? pawLeft : pawRight;
+  const zoneEnd = side === 'left' ? W * PAW_REACH : W;
+
+  let caught = false;
+  mice.forEach(m => {
+    if (m.caught) return;
+    if (m.x >= zoneStart && m.x <= zoneEnd) {
+      m.caught = true;
+      caught = true;
+      miceCaught++;
+
+      // Score
+      const pts = level * 10;
+      if (player === -1) scores[0] += pts; // solo
+      else scores[player] += pts;
+
+      // Particles
+      for (let i = 0; i < 12; i++) {
+        particles.push({
+          x: m.x, y: m.y,
+          vx: (Math.random() - 0.5) * 200,
+          vy: (Math.random() - 0.5) * 200,
+          life: 0.6 + Math.random() * 0.4,
+          maxLife: 0.6 + Math.random() * 0.4,
+          color: side === 'left' ? 'var(--paw-left)' : 'var(--paw-right)',
+          colorRaw: side === 'left' ? [244,132,95] : [126,200,227],
+          size: 3 + Math.random() * 4
+        });
+      }
+      // Score popup particle
+      particles.push({
+        x: m.x, y: m.y - 20,
+        vx: 0, vy: -60,
+        life: 1.0, maxLife: 1.0,
+        text: `+${pts}`,
+        colorRaw: [255, 209, 102],
+        size: 0
+      });
+    }
+  });
+}
+
+function togglePause() {
+  if (!gameRunning) return;
+  paused = !paused;
+  document.getElementById('pauseBtn').textContent = paused ? '▶' : '⏸';
+  if (!paused) {
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+  }
+}
+
+// ── UPDATE ──
+function update(dt) {
+  // Paw animations decay
+  pawAnimLeft = Math.max(0, pawAnimLeft - dt * 5);
+  pawAnimRight = Math.max(0, pawAnimRight - dt * 5);
+
+  // Spawn mice
+  spawnTimer -= dt * 1000;
+  if (spawnTimer <= 0) {
+    spawnMouse();
+    // Chance of double spawn at higher levels
+    if (level >= 3 && Math.random() < (level - 2) * 0.15) spawnMouse();
+    spawnTimer = spawnInterval;
+  }
+
+  // Move mice
+  mice.forEach(m => {
+    if (m.caught) return;
+    m.x += m.speed * dt;
+    m.wiggle += dt * 8;
+    m.tailPhase += dt * 12;
+  });
+
+  // Check escapes
+  mice = mice.filter(m => {
+    if (m.caught) return false;
+    if ((m.speed > 0 && m.x > W + 40) || (m.speed < 0 && m.x < -40)) {
+      miceEscaped++;
+      lives--;
+      updateHUD();
+      if (lives <= 0) { endGame(); return false; }
+      return false;
+    }
+    return true;
+  });
+
+  // Level progression
+  const totalHandled = miceCaught + miceEscaped;
+  const newLevel = Math.floor(totalHandled / 10) + 1;
+  if (newLevel > level) {
+    level = newLevel;
+    updateSpawnRate();
+  }
+
+  // Particles
+  particles.forEach(p => { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; });
+  particles = particles.filter(p => p.life > 0);
+}
+
+// ── DRAW ──
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, '#1a1118');
+  bgGrad.addColorStop(0.3, '#241a20');
+  bgGrad.addColorStop(0.7, '#241a20');
+  bgGrad.addColorStop(1, '#1a1118');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Floor / ceiling texture
+  drawWoodFloor();
+
+  // Corridor
+  drawCorridor();
+
+  // Division line (where paws split)
+  const divX = W * PAW_REACH;
+  ctx.save();
+  ctx.setLineDash([8, 8]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(divX, corridorTop);
+  ctx.lineTo(divX, corridorBot);
+  ctx.stroke();
+  ctx.restore();
+
+  // Zone labels
+  ctx.save();
+  ctx.font = '600 13px Fredoka';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(244,132,95,0.35)';
+  ctx.fillText('LEFT PAW  [A / ←]', divX / 2, corridorTop - 10);
+  ctx.fillStyle = 'rgba(126,200,227,0.35)';
+  ctx.fillText(twoPlayer ? 'RIGHT PAW  [J / L]' : 'RIGHT PAW  [D / →]', divX + (W - divX) / 2, corridorTop - 10);
+  ctx.restore();
+
+  // Mice
+  mice.forEach(m => { if (!m.caught) drawMouse(m); });
+
+  // Paw swipe effects
+  if (pawAnimLeft > 0) drawPawSwipe('left', pawAnimLeft);
+  if (pawAnimRight > 0) drawPawSwipe('right', pawAnimRight);
+
+  // Paw indicators
+  drawPawIndicator('left');
+  drawPawIndicator('right');
+
+  // Particles
+  particles.forEach(p => {
+    const alpha = p.life / p.maxLife;
+    if (p.text) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.font = '700 18px Fredoka';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = `rgba(${p.colorRaw.join(',')},${alpha})`;
+      ctx.fillText(p.text, p.x, p.y);
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = `rgba(${p.colorRaw.join(',')},${alpha})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  });
+}
+
+function drawWoodFloor() {
+  // Top wall
+  const wallGrad = ctx.createLinearGradient(0, 0, 0, corridorTop);
+  wallGrad.addColorStop(0, '#1e1520');
+  wallGrad.addColorStop(1, '#2a1f24');
+  ctx.fillStyle = wallGrad;
+  ctx.fillRect(0, 0, W, corridorTop);
+
+  // Bottom wall
+  const wallGrad2 = ctx.createLinearGradient(0, corridorBot, 0, H);
+  wallGrad2.addColorStop(0, '#2a1f24');
+  wallGrad2.addColorStop(1, '#1e1520');
+  ctx.fillStyle = wallGrad2;
+  ctx.fillRect(0, corridorBot, W, H - corridorBot);
+
+  // Baseboard lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, corridorTop); ctx.lineTo(W, corridorTop);
+  ctx.moveTo(0, corridorBot); ctx.lineTo(W, corridorBot);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255,200,100,0.04)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, corridorTop + 4); ctx.lineTo(W, corridorTop + 4);
+  ctx.moveTo(0, corridorBot - 4); ctx.lineTo(W, corridorBot - 4);
+  ctx.stroke();
+}
+
+function drawCorridor() {
+  // Floor gradient
+  const floorGrad = ctx.createLinearGradient(0, corridorTop, 0, corridorBot);
+  floorGrad.addColorStop(0, '#3d2e32');
+  floorGrad.addColorStop(0.5, '#4a383d');
+  floorGrad.addColorStop(1, '#3d2e32');
+  ctx.fillStyle = floorGrad;
+  ctx.fillRect(0, corridorTop, W, corridorH);
+
+  // Floorboard lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 1;
+  const boardW = 80;
+  for (let x = 0; x < W; x += boardW) {
+    ctx.beginPath();
+    ctx.moveTo(x, corridorTop);
+    ctx.lineTo(x, corridorBot);
+    ctx.stroke();
+  }
+}
+
+function drawMouse(m) {
+  ctx.save();
+  ctx.translate(m.x, m.y + Math.sin(m.wiggle) * 3);
+  const dir = m.speed > 0 ? 1 : -1;
+  ctx.scale(dir, 1);
+
+  const s = m.size;
+
+  // Tail
+  ctx.strokeStyle = '#8a7570';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.8, 0);
+  const tailWag = Math.sin(m.tailPhase) * 8;
+  ctx.quadraticCurveTo(-s * 1.3, tailWag, -s * 1.6, tailWag * 0.5);
+  ctx.stroke();
+
+  // Body
+  ctx.fillStyle = m.color;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, s * 0.8, s * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head
+  ctx.fillStyle = m.color;
+  ctx.beginPath();
+  ctx.ellipse(s * 0.6, -s * 0.05, s * 0.4, s * 0.35, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ears
+  ctx.fillStyle = '#9a8a80';
+  ctx.beginPath();
+  ctx.ellipse(s * 0.7, -s * 0.35, s * 0.18, s * 0.22, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(s * 0.9, -s * 0.3, s * 0.15, s * 0.2, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eye
+  ctx.fillStyle = '#222';
+  ctx.beginPath();
+  ctx.arc(s * 0.8, -s * 0.05, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Nose
+  ctx.fillStyle = '#e8a0a0';
+  ctx.beginPath();
+  ctx.arc(s * 1.0, s * 0.05, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Whiskers
+  ctx.strokeStyle = 'rgba(200,180,170,0.5)';
+  ctx.lineWidth = 0.8;
+  for (let i = -1; i <= 1; i += 2) {
+    ctx.beginPath();
+    ctx.moveTo(s * 0.9, s * 0.05);
+    ctx.lineTo(s * 1.4, s * 0.05 + i * 6);
+    ctx.stroke();
+  }
+
+  // Little feet
+  ctx.fillStyle = '#9a8578';
+  ctx.beginPath();
+  ctx.ellipse(-s * 0.3, s * 0.45, 4, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(s * 0.3, s * 0.45, 4, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawPawSwipe(side, anim) {
+  const zoneStart = side === 'left' ? 0 : W * PAW_REACH;
+  const zoneEnd = side === 'left' ? W * PAW_REACH : W;
+  const cx = (zoneStart + zoneEnd) / 2;
+  const cy = (corridorTop + corridorBot) / 2;
+  const color = side === 'left' ? [244, 132, 95] : [126, 200, 227];
+
+  ctx.save();
+  ctx.globalAlpha = anim * 0.3;
+
+  // Swipe flash
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, corridorH * 0.8);
+  grad.addColorStop(0, `rgba(${color.join(',')},0.4)`);
+  grad.addColorStop(1, `rgba(${color.join(',')},0)`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(zoneStart, corridorTop, zoneEnd - zoneStart, corridorH);
+
+  // Claw marks
+  ctx.globalAlpha = anim * 0.5;
+  ctx.strokeStyle = `rgba(${color.join(',')},0.6)`;
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  for (let i = -1; i <= 1; i++) {
+    ctx.beginPath();
+    ctx.moveTo(cx + i * 25, cy - 40 * anim);
+    ctx.lineTo(cx + i * 25 + i * 5, cy + 40 * anim);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawPawIndicator(side) {
+  const isLeft = side === 'left';
+  const x = isLeft ? 50 : W - 50;
+  const y = corridorBot + 40;
+  const color = isLeft ? '#f4845f' : '#7ec8e3';
+  const anim = isLeft ? pawAnimLeft : pawAnimRight;
+  const scale = 1 + anim * 0.3;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  ctx.rotate(anim * (isLeft ? -0.2 : 0.2));
+
+  // Draw a paw print
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.6 + anim * 0.4;
+
+  // Pad
+  ctx.beginPath();
+  ctx.ellipse(0, 5, 14, 11, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Toes
+  const toePositions = [[-10, -8], [-3, -14], [5, -14], [12, -8]];
+  toePositions.forEach(([tx, ty]) => {
+    ctx.beginPath();
+    ctx.ellipse(tx, ty, 5, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.restore();
+}
+
+function updateHUD() {
+  document.getElementById('scoreP1').textContent = scores[0];
+  document.getElementById('scoreP2').textContent = scores[1];
+  document.getElementById('levelNum').textContent = level;
+  document.getElementById('livesDisplay').innerHTML = '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, (twoPlayer ? 5 : 3) - lives));
+}
+
+// ── GAME LOOP ──
+function gameLoop(timestamp) {
+  if (!gameRunning || paused) return;
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  lastTime = timestamp;
+
+  update(dt);
+  draw();
+  updateHUD();
+
+  if (gameRunning) requestAnimationFrame(gameLoop);
+}
+
+// ── GAME OVER ──
+function endGame() {
+  gameRunning = false;
+  document.getElementById('hud').classList.add('hidden');
+  const go = document.getElementById('gameOver');
+  go.classList.remove('hidden');
+
+  document.getElementById('goStats').textContent = `Level ${level} • ${miceCaught} mice caught`;
+
+  if (twoPlayer) {
+    document.getElementById('goScore').textContent = `P1: ${scores[0]}  |  P2: ${scores[1]}`;
+    const winner = document.getElementById('goWinner');
+    winner.classList.remove('hidden');
+    if (scores[0] > scores[1]) {
+      winner.textContent = '🏆 Player 1 Wins!';
+      winner.style.color = '#f4845f';
+    } else if (scores[1] > scores[0]) {
+      winner.textContent = '🏆 Player 2 Wins!';
+      winner.style.color = '#7ec8e3';
+    } else {
+      winner.textContent = "🤝 It's a Tie!";
+      winner.style.color = '#ffd166';
+    }
+  } else {
+    document.getElementById('goScore').textContent = `Score: ${scores[0]}`;
+    document.getElementById('goWinner').classList.add('hidden');
+  }
+  // Report score to Eggplant Portal
+  try{parent.postMessage({type:'eggplant_score',score:scores[0]},'*')}catch(e){}
+
+  // Keep drawing the last frame behind overlay
+  draw();
+}
+
+function backToMenu() {
+  document.getElementById('gameOver').classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+}
+
+// Initial draw for background
+draw();
+</script>
+</body>
+</html>
