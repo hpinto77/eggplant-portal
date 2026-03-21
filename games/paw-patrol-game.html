@@ -464,6 +464,16 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
+// ── TOUCH CONTROLS ──
+document.addEventListener('touchstart', e => {
+  if (!gameRunning || paused) return;
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (t.clientX < innerWidth / 2) swipePaw('left', twoPlayer ? 0 : -1);
+    else swipePaw('right', twoPlayer ? 0 : -1);
+  }
+}, { passive: false });
+
 function swipePaw(side, player) {
   if (side === 'left') pawAnimLeft = 1;
   else pawAnimRight = 1;

@@ -18,6 +18,17 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 #go .st{font-size:.65rem;color:#4a5a6a;letter-spacing:.1em;margin-bottom:1rem}
 #go button{background:none;border:1px solid rgba(100,180,255,.2);color:#60c0ff;font-family:monospace;font-size:.7rem;padding:8px 24px;letter-spacing:.15em;cursor:pointer}
 #go button:hover{border-color:#60c0ff;background:rgba(100,180,255,.08)}
+/* Mobile controls */
+#mobCtrl{display:none;position:fixed;bottom:0;left:0;right:0;z-index:15;pointer-events:none;padding:10px}
+.mob-row{display:flex;justify-content:space-between;align-items:flex-end}
+.mob-btn{pointer-events:all;width:52px;height:52px;border-radius:50%;border:2px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;color:rgba(255,255,255,.4);-webkit-tap-highlight-color:transparent;user-select:none}
+.mob-btn:active{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3)}
+.mob-dpad{display:flex;gap:6px;align-items:center}
+.mob-actions{display:flex;gap:8px;align-items:center}
+.mob-btn.jump{border-color:rgba(100,200,255,.2);color:rgba(100,200,255,.5)}
+.mob-btn.shoot{border-color:rgba(255,180,80,.2);color:rgba(255,180,80,.5)}
 </style></head><body>
 <div id="title" onclick="start()">
 <h1>ASTRO SPRINT</h1>
@@ -27,6 +38,17 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 </div>
 <canvas id="c"></canvas>
 <div id="go"><h2>GAME OVER</h2><div class="sc" id="goSc">0</div><div class="st" id="goSt"></div><button onclick="start()">RETRY</button></div>
+
+<div id="mobCtrl"><div class="mob-row">
+<div class="mob-dpad">
+<div class="mob-btn" id="mbL">◀</div>
+<div class="mob-btn" id="mbR">▶</div>
+</div>
+<div class="mob-actions">
+<div class="mob-btn shoot" id="mbS">💥</div>
+<div class="mob-btn jump" id="mbJ">▲</div>
+</div>
+</div></div>
 
 <script>
 const cv=document.getElementById('c'),c=cv.getContext('2d');
@@ -43,8 +65,27 @@ addEventListener('keydown',e=>{K[e.key.toLowerCase()]=true;K[e.code]=true;if((e.
 addEventListener('keyup',e=>{K[e.key.toLowerCase()]=false;K[e.code]=false});
 cv.onmousedown=()=>{mouseDown=true;if(GS==='title'||GS==='over')start()};
 cv.onmouseup=()=>{mouseDown=false};
-cv.ontouchstart=e=>{e.preventDefault();mouseDown=true;if(GS==='title'||GS==='over')start()};
-cv.ontouchend=e=>{e.preventDefault();mouseDown=false};
+
+// ── MOBILE CONTROLS ──
+const isMob='ontouchstart' in window||navigator.maxTouchPoints>0;
+if(isMob)document.getElementById('mobCtrl').style.display='block';
+
+// Virtual button touch handlers
+let mobL=false,mobR=false,mobJ=false,mobS=false;
+function mobBtn(id,onKey){
+  const el=document.getElementById(id);
+  el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();onKey(true);if(GS==='title'||GS==='over')start()},{passive:false});
+  el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();onKey(false)},{passive:false});
+  el.addEventListener('touchcancel',e=>{onKey(false)});
+}
+mobBtn('mbL',v=>{mobL=v;K.a=v;K.ArrowLeft=v});
+mobBtn('mbR',v=>{mobR=v;K.d=v;K.ArrowRight=v});
+mobBtn('mbJ',v=>{mobJ=v;K.w=v;K[' ']=v});
+mobBtn('mbS',v=>{mobS=v;mouseDown=v});
+
+// Canvas touch for start/shoot (non-button areas)
+cv.ontouchstart=e=>{e.preventDefault();if(GS==='title'||GS==='over')start();else mouseDown=true};
+cv.ontouchend=e=>{e.preventDefault();if(!mobS)mouseDown=false};
 
 // ═══ TERRAIN — solid rectangles for proper collision ═══
 // Every platform is an AABB: {x, y, w, h, type, ...extra}

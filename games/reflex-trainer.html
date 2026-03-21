@@ -216,7 +216,7 @@ html,body {
 }
 
 .key-target {
-  width:90px;height:90px;
+  width:clamp(60px,18vw,90px);height:clamp(60px,18vw,90px);
   border-radius:16px;
   border:2px solid var(--border);
   background:var(--surface);
@@ -225,6 +225,14 @@ html,body {
   transition:all .12s;
   position:relative;
   overflow:hidden;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+@media (pointer:coarse){
+  .key-target{width:clamp(65px,22vw,100px);height:clamp(65px,22vw,100px);border-radius:20px}
+  .key-target .key-label::after{content:' — TAP'}
 }
 
 .key-target .key-letter {
@@ -848,13 +856,16 @@ window.addEventListener('keydown', e => {
   if (!waiting) return;
   const key = e.key.toUpperCase();
   if (!cfg.keys.includes(key)) return;
+  handleKeyInput(key);
+});
 
+function handleKeyInput(key) {
+  if (!waiting) return;
   const rt = performance.now() - stimulusTime;
   waiting = false;
   clearTimeout(timeoutHandle);
 
   if (isDecoy) {
-    // They pressed during a decoy — penalty
     handleDecoyFail(key);
     return;
   }
@@ -864,7 +875,22 @@ window.addEventListener('keydown', e => {
   } else {
     handleWrongKey(key);
   }
+}
+
+// ── TOUCH SUPPORT — tap key targets to play on mobile ──
+document.addEventListener('click', e => {
+  const target = e.target.closest('.key-target');
+  if (!target || !waiting) return;
+  const letter = target.querySelector('.key-letter');
+  if (letter) handleKeyInput(letter.textContent.trim().toUpperCase());
 });
+document.addEventListener('touchstart', e => {
+  const target = e.target.closest('.key-target');
+  if (!target || !waiting) return;
+  e.preventDefault();
+  const letter = target.querySelector('.key-letter');
+  if (letter) handleKeyInput(letter.textContent.trim().toUpperCase());
+}, { passive: false });
 
 function handleHit(rt) {
   const rtMs = Math.round(rt);

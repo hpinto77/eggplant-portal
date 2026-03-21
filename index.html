@@ -35,10 +35,10 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,20,.85);backdrop-
 .gc{background:var(--card);border:1px solid rgba(255,255,255,.04);border-radius:4px;overflow:hidden;cursor:pointer;transition:all .3s;position:relative;animation:ci .4s ease-out backwards}
 .gc:hover{border-color:rgba(224,64,251,.2);transform:translateY(-3px);box-shadow:0 8px 30px rgba(224,64,251,.06)}
 @keyframes ci{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.ca{height:120px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.ca{height:140px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .cg{position:absolute;inset:0}
-.card-icon{position:relative;font-size:2.2rem;z-index:1;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));margin-bottom:2px}
-.card-art{position:relative;font-size:.6rem;letter-spacing:.3em;color:rgba(255,255,255,.15);z-index:1}
+.card-img{position:relative;z-index:1;max-height:100%;max-width:100%;object-fit:cover;width:100%;height:100%;opacity:.85;transition:opacity .3s}
+.gc:hover .card-img{opacity:1}
 .ct{position:absolute;top:8px;right:8px;font-size:.5rem;letter-spacing:.12em;padding:2px 8px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);color:var(--t2);border-radius:2px;backdrop-filter:blur(8px)}
 .cb{padding:12px 14px 14px}
 .cn{font-family:Audiowide;font-size:.8rem;letter-spacing:.08em;margin-bottom:3px}
@@ -158,12 +158,12 @@ footer{max-width:1200px;margin:0 auto;padding:16px clamp(16px,4vw,40px) 30px;bor
 // GAME REGISTRY — add games here
 // ═══════════════════════════════════════
 const BUILTIN=[
-{id:'defense',name:'DEFENSE',file:'games/defense.html',genre:'Rhythm',desc:'Beat-synced rhythm survival. Tap to destroy lines on the beat.',colors:['#06060c','#0a1a2a','#1a0a2a'],accent:'#00e5ff',hasScore:true,mobile:true,icon:'🎯',art:'⟡ ─── ⟡ ─── ⟡'},
-{id:'bitter',name:'THE BITTER',file:'games/the-bitter.html',genre:'Horror',desc:'First-person stealth horror. Three creatures. One school. Hide or die.',colors:['#1a0a0a','#8b0000','#2a1a0a'],accent:'#cc1100',hasScore:false,mobile:false,icon:'👁️',art:'▓░▓░▓░▓░▓░▓'},
-{id:'allfather',name:'THE ALLFATHER',file:'games/the-allfather.html',genre:'Survival',desc:'Five days in the woods. Fortify your cabin. Survive the Allfather.',colors:['#0a1a0a','#2a3a18','#1a1008'],accent:'#8a7a60',hasScore:false,mobile:false,icon:'🏚️',art:'🌲🌲🏚️🌲🌲'},
-{id:'reflex',name:'REFLEX',file:'games/reflex-trainer.html',genre:'Training',desc:'Reaction time trainer. Test your reflexes across multiple rounds.',colors:['#0a1410','#0a2018','#081a12'],accent:'#00e5a0',hasScore:true,mobile:true,icon:'⚡',art:'● ● ● ● ●'},
-{id:'pawpatrol',name:'PAW PATROL',file:'games/paw-patrol-game.html',genre:'Arcade',desc:'Catch the mice! Colourful arcade action for all ages.',colors:['#1a1008','#2a1810','#0a0a18'],accent:'#f4845f',hasScore:true,mobile:false,icon:'🐾',art:'🐾 🐭 🐾 🐭 🐾'},
-{id:'astrosprint',name:'ASTRO SPRINT',file:'games/astro-sprint.html',genre:'Platformer',desc:'Endless space platformer. Run, jump, shoot aliens. How far can you go?',colors:['#08080e','#0a1020','#1a0a20'],accent:'#60c0ff',hasScore:true,mobile:false,icon:'🚀',art:'✦ · 🚀 · ✦'},
+{id:'defense',name:'DEFENSE',file:'games/defense.html',genre:'Rhythm',desc:'Beat-synced rhythm survival. Tap to destroy lines on the beat.',colors:['#06060c','#0a1a2a','#1a0a2a'],accent:'#00e5ff',hasScore:true,mobile:true,img:'defense-icon.PNG'},
+{id:'bitter',name:'THE BITTER',file:'games/the-bitter.html',genre:'Horror',desc:'First-person stealth horror. Three creatures. One school. Hide or die.',colors:['#1a0a0a','#8b0000','#2a1a0a'],accent:'#cc1100',hasScore:false,mobile:false,img:'the-bitter-icon.PNG'},
+{id:'allfather',name:'THE ALLFATHER',file:'games/the-allfather.html',genre:'Survival',desc:'Five days in the woods. Fortify your cabin. Survive the Allfather.',colors:['#0a1a0a','#2a3a18','#1a1008'],accent:'#8a7a60',hasScore:false,mobile:false,img:'the-allfather-icon.PNG'},
+{id:'reflex',name:'REFLEX',file:'games/reflex-trainer.html',genre:'Training',desc:'Reaction time trainer. Test your reflexes across multiple rounds.',colors:['#0a1410','#0a2018','#081a12'],accent:'#00e5a0',hasScore:true,mobile:true,img:'reflex-icon.PNG'},
+{id:'pawpatrol',name:'PAW PATROL',file:'games/paw-patrol-game.html',genre:'Arcade',desc:'Catch the mice! Colourful arcade action for all ages.',colors:['#1a1008','#2a1810','#0a0a18'],accent:'#f4845f',hasScore:true,mobile:true,img:'paw-patrol-icon.PNG'},
+{id:'astrosprint',name:'ASTRO SPRINT',file:'games/astro-sprint.html',genre:'Platformer',desc:'Endless space platformer. Run, jump, shoot aliens. How far can you go?',colors:['#08080e','#0a1020','#1a0a20'],accent:'#60c0ff',hasScore:true,mobile:true,img:'astro-sprint.PNG'},
 ];
 
 const ADMIN_PASS='eggplant42'; // Change this!
@@ -215,10 +215,10 @@ function rGrid(){
   document.getElementById('gg').innerHTML=f.map((g,i)=>{
     const grad=g.colors?`linear-gradient(135deg,${g.colors[0]||'#111'},${g.colors[1]||'#222'},${g.colors[2]||'#111'})`:`linear-gradient(135deg,#111,#222)`;
     const mobBadge=g.mobile?'<div class="mob yes">📱 MOBILE</div>':'<div class="mob no">🖥 DESKTOP</div>';
+    const imgTag=g.img?`<img class="card-img" src="${g.img}" alt="${g.name}">`:'';
     return`<div class="gc" style="animation-delay:${i*.05}s" onclick="playG('${g.id}')">
 <div class="ca"><div class="cg" style="background:${grad}"></div>
-<div class="card-icon">${g.icon||'🎮'}</div>
-<div class="card-art">${g.art||''}</div>
+${imgTag}
 ${mobBadge}<div class="ct">${(g.genre||'GAME').toUpperCase()}</div></div>
 <div class="cb"><div class="cn" style="color:${g.accent||'#ccc'}">${g.name}</div><div class="cd">${g.desc||''}</div>
 <div class="cf"><div class="cp">▶ PLAY</div>${g.hasScore?`<div class="cs" onclick="event.stopPropagation();oLB('${g.id}')">🏆 SCORES</div>`:''}</div></div></div>`}).join('');
@@ -249,7 +249,12 @@ ${s.length?s.slice(0,5).map((sc,i)=>`<div class="lr"><div class="lrk${i===0?' g'
 }
 
 // ═══ PLAYER ═══
-function playG(id){const g=games.find(x=>x.id===id);if(!g)return;curGame=g;
+const isMob='ontouchstart' in window||navigator.maxTouchPoints>0;
+function playG(id){const g=games.find(x=>x.id===id);if(!g)return;
+  if(isMob&&g.mobile===false){
+    if(!confirm(g.name+' requires a keyboard and is best on desktop. Play anyway?'))return;
+  }
+  curGame=g;
 document.getElementById('pT').textContent=g.name;document.getElementById('gF').src=g.file;
 document.getElementById('player').style.display='flex';document.body.style.overflow='hidden'}
 function exitG(){document.getElementById('gF').src='about:blank';document.getElementById('player').style.display='none';document.body.style.overflow='';curGame=null}
