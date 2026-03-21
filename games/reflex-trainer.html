@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REFLEX — Reaction Training</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root {
+  --bg: #0a0c10;
+  --surface: #12151c;
+  --surface2: #1a1e28;
+  --border: #252a36;
+  --text: #e8ecf4;
+  --dim: #5a6478;
+  --accent: #00e5a0;
+  --accent-glow: rgba(0,229,160,.15);
+  --hot: #ff3b5c;
+  --hot-glow: rgba(255,59,92,.15);
+  --warn: #ffb800;
+  --warn-glow: rgba(255,184,0,.12);
+  --blue: #3b82f6;
+  --blue-glow: rgba(59,130,246,.12);
+  --cyan: #06d6f2;
+  --purple: #a855f7;
+}
+
+html,body {
+  width:100%;height:100%;
+  background:var(--bg);
+  font-family:'Outfit',sans-serif;
+  color:var(--text);
+  overflow:hidden;
+  user-select:none;
+}
+
+/* ── SHARED ── */
+.mono { font-family:'JetBrains Mono',monospace; }
+.hidden { display:none !important; }
+
+/* ── MENU ── */
+#menu {
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  z-index:100;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 45%, rgba(0,229,160,.04) 0%, transparent 70%),
+    var(--bg);
+}
+
+.logo-mark {
+  width:72px;height:72px;
+  border-radius:20px;
+  background:linear-gradient(135deg,var(--accent),#00b880);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;font-weight:900;color:var(--bg);
+  margin-bottom:1.2rem;
+  box-shadow:0 8px 40px rgba(0,229,160,.25);
+  animation:logoPulse 3s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+  0%,100%{box-shadow:0 8px 40px rgba(0,229,160,.25);transform:scale(1)}
+  50%{box-shadow:0 8px 60px rgba(0,229,160,.35);transform:scale(1.03)}
+}
+
+.menu-title {
+  font-size:clamp(2rem,5vw,3.2rem);
+  font-weight:900;letter-spacing:6px;
+  text-transform:uppercase;
+  background:linear-gradient(135deg,var(--accent),#06d6f2);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:.3rem;
+}
+
+.menu-sub {
+  font-size:.95rem;color:var(--dim);
+  letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:2.5rem;font-weight:300;
+}
+
+.panel {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:1.6rem 2rem;
+  width:min(480px,92vw);
+  margin-bottom:1rem;
+}
+
+.panel-label {
+  font-size:.7rem;text-transform:uppercase;
+  letter-spacing:3px;color:var(--dim);
+  margin-bottom:1rem;font-weight:600;
+}
+
+.opt-row {
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:.65rem;font-size:.9rem;
+}
+
+.opt-row:last-child { margin-bottom:0; }
+
+.seg-group {
+  display:flex;gap:2px;
+  background:var(--bg);border-radius:10px;padding:2px;
+}
+
+.seg-btn {
+  padding:6px 14px;border:none;border-radius:8px;
+  background:transparent;color:var(--dim);
+  font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:600;
+  cursor:pointer;transition:all .2s;
+}
+
+.seg-btn.active {
+  background:var(--accent);color:var(--bg);
+  box-shadow:0 2px 12px rgba(0,229,160,.3);
+}
+
+.seg-btn:hover:not(.active) { color:var(--text); }
+
+.start-btn {
+  display:block;width:100%;padding:16px;
+  border:none;border-radius:14px;
+  font-family:'Outfit',sans-serif;font-size:1.15rem;
+  font-weight:800;letter-spacing:1px;
+  cursor:pointer;transition:all .2s;
+  text-transform:uppercase;
+}
+
+.start-btn:hover { transform:translateY(-2px);filter:brightness(1.1); }
+.start-btn:active { transform:translateY(1px); }
+
+.btn-solo {
+  background:linear-gradient(135deg,var(--accent),#00b880);
+  color:var(--bg);
+  box-shadow:0 4px 20px rgba(0,229,160,.3);
+}
+
+.btn-multi {
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  color:#fff;
+  box-shadow:0 4px 20px rgba(59,130,246,.3);
+  margin-top:.5rem;
+}
+
+.key-chip {
+  display:inline-block;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;padding:2px 8px;
+  font-family:'JetBrains Mono',monospace;font-size:.75rem;
+  color:var(--accent);
+}
+
+.difficulty-desc {
+  font-size:.75rem;color:var(--dim);
+  margin-top:.5rem;line-height:1.4;
+  padding-top:.5rem;border-top:1px solid var(--border);
+}
+
+/* ── GAME SCREEN ── */
+#gameScreen {
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  z-index:50;
+}
+
+/* Top bar */
+.game-bar {
+  position:absolute;top:0;left:0;right:0;
+  height:56px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 28px;
+  background:linear-gradient(180deg,rgba(0,0,0,.5),transparent);
+  z-index:10;
+}
+
+.bar-section { display:flex;align-items:center;gap:14px; }
+
+.stat-pill {
+  display:flex;align-items:center;gap:6px;
+  padding:4px 14px;border-radius:20px;
+  font-size:.85rem;font-weight:600;
+  background:var(--surface);border:1px solid var(--border);
+}
+
+.stat-pill .label { color:var(--dim);font-size:.7rem;text-transform:uppercase;letter-spacing:1px; }
+
+.back-btn {
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:6px 14px;
+  color:var(--dim);font-family:'Outfit',sans-serif;
+  font-size:.8rem;cursor:pointer;transition:all .2s;
+}
+
+.back-btn:hover { color:var(--text);border-color:var(--dim); }
+
+/* Central stimulus area */
+.stimulus-zone {
+  position:relative;
+  width:min(700px,90vw);
+  display:flex;flex-direction:column;
+  align-items:center;gap:2rem;
+}
+
+/* Key targets row */
+.targets-row {
+  display:flex;gap:16px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+
+.key-target {
+  width:90px;height:90px;
+  border-radius:16px;
+  border:2px solid var(--border);
+  background:var(--surface);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  transition:all .12s;
+  position:relative;
+  overflow:hidden;
+}
+
+.key-target .key-letter {
+  font-family:'JetBrains Mono',monospace;
+  font-size:1.8rem;font-weight:700;
+  color:var(--dim);transition:all .12s;
+}
+
+.key-target .key-label {
+  font-size:.6rem;color:var(--dim);
+  text-transform:uppercase;letter-spacing:1px;
+  margin-top:2px;opacity:.5;
+}
+
+/* Lit states */
+.key-target.lit-green {
+  border-color:var(--accent);
+  background:linear-gradient(180deg,rgba(0,229,160,.12),var(--surface));
+  box-shadow:0 0 30px var(--accent-glow),0 0 60px var(--accent-glow);
+  animation:targetPop .15s ease-out;
+}
+.key-target.lit-green .key-letter { color:var(--accent); }
+
+.key-target.lit-red {
+  border-color:var(--hot);
+  background:linear-gradient(180deg,rgba(255,59,92,.12),var(--surface));
+  box-shadow:0 0 30px var(--hot-glow);
+}
+.key-target.lit-red .key-letter { color:var(--hot); }
+
+.key-target.lit-yellow {
+  border-color:var(--warn);
+  background:linear-gradient(180deg,rgba(255,184,0,.12),var(--surface));
+  box-shadow:0 0 30px var(--warn-glow);
+}
+.key-target.lit-yellow .key-letter { color:var(--warn); }
+
+.key-target.lit-blue {
+  border-color:var(--blue);
+  background:linear-gradient(180deg,rgba(59,130,246,.12),var(--surface));
+  box-shadow:0 0 30px var(--blue-glow);
+}
+.key-target.lit-blue .key-letter { color:var(--blue); }
+
+.key-target.lit-cyan {
+  border-color:var(--cyan);
+  background:linear-gradient(180deg,rgba(6,214,242,.12),var(--surface));
+  box-shadow:0 0 30px rgba(6,214,242,.15);
+}
+.key-target.lit-cyan .key-letter { color:var(--cyan); }
+
+.key-target.lit-purple {
+  border-color:var(--purple);
+  background:linear-gradient(180deg,rgba(168,85,247,.12),var(--surface));
+  box-shadow:0 0 30px rgba(168,85,247,.15);
+}
+.key-target.lit-purple .key-letter { color:var(--purple); }
+
+.key-target.hit {
+  animation:hitFlash .3s ease-out;
+}
+.key-target.miss {
+  animation:missPulse .4s ease-out;
+}
+
+@keyframes targetPop {
+  0%{transform:scale(.9)}100%{transform:scale(1)}
+}
+@keyframes hitFlash {
+  0%{transform:scale(1.1);filter:brightness(1.5)}
+  100%{transform:scale(1);filter:brightness(1)}
+}
+@keyframes missPulse {
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-6px)}
+  75%{transform:translateX(6px)}
+}
+
+/* Status area */
+.status-area {
+  text-align:center;
+  min-height:120px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+
+.status-msg {
+  font-size:1.6rem;font-weight:800;
+  letter-spacing:2px;text-transform:uppercase;
+}
+
+.reaction-time {
+  font-family:'JetBrains Mono',monospace;
+  font-size:3.5rem;font-weight:700;
+  margin:.2rem 0;
+  transition:color .2s;
+}
+
+.reaction-unit {
+  font-size:.85rem;color:var(--dim);
+  letter-spacing:2px;text-transform:uppercase;
+}
+
+.round-counter {
+  font-size:.8rem;color:var(--dim);
+  letter-spacing:1px;margin-top:.5rem;
+}
+
+/* Color legend */
+.color-legend {
+  display:flex;gap:8px;flex-wrap:wrap;
+  justify-content:center;margin-top:.5rem;
+}
+
+.legend-item {
+  display:flex;align-items:center;gap:4px;
+  font-size:.7rem;color:var(--dim);
+}
+
+.legend-dot {
+  width:10px;height:10px;border-radius:50%;
+}
+
+/* Progress bar for timeout */
+.timeout-bar-container {
+  width:min(400px,80vw);height:4px;
+  background:var(--surface2);border-radius:2px;
+  margin-top:1rem;overflow:hidden;
+}
+
+.timeout-bar {
+  height:100%;width:100%;
+  background:var(--accent);
+  border-radius:2px;
+  transition:width linear;
+  transform-origin:left;
+}
+
+/* ── RESULTS SCREEN ── */
+#results {
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  z-index:80;
+  background:var(--bg);
+}
+
+.results-card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:2.5rem 3rem;
+  width:min(520px,92vw);
+  text-align:center;
+}
+
+.results-title {
+  font-size:1.8rem;font-weight:900;
+  letter-spacing:3px;text-transform:uppercase;
+  margin-bottom:.3rem;
+}
+
+.results-subtitle {
+  font-size:.85rem;color:var(--dim);margin-bottom:2rem;
+}
+
+.big-stat {
+  font-family:'JetBrains Mono',monospace;
+  font-size:3.5rem;font-weight:700;
+  color:var(--accent);
+  line-height:1;
+}
+
+.big-stat-label {
+  font-size:.75rem;color:var(--dim);
+  text-transform:uppercase;letter-spacing:2px;
+  margin-bottom:1.5rem;
+}
+
+.stats-grid {
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  gap:1rem;margin-bottom:2rem;
+}
+
+.stat-box {
+  background:var(--surface2);border-radius:12px;
+  padding:1rem;
+}
+
+.stat-box .val {
+  font-family:'JetBrains Mono',monospace;
+  font-size:1.4rem;font-weight:700;
+}
+
+.stat-box .lbl {
+  font-size:.65rem;color:var(--dim);
+  text-transform:uppercase;letter-spacing:1px;
+  margin-top:2px;
+}
+
+/* Sparkline */
+.sparkline-container {
+  margin-bottom:1.5rem;
+}
+
+.sparkline-label {
+  font-size:.7rem;color:var(--dim);
+  text-transform:uppercase;letter-spacing:2px;
+  margin-bottom:.5rem;
+}
+
+.sparkline {
+  width:100%;height:60px;
+}
+
+/* Multi-player results */
+.player-results {
+  display:flex;gap:1rem;margin-bottom:1.5rem;
+}
+
+.player-card {
+  flex:1;background:var(--surface2);
+  border-radius:14px;padding:1.2rem;
+  text-align:center;
+  border:2px solid transparent;
+}
+
+.player-card.winner {
+  border-color:var(--accent);
+  box-shadow:0 0 20px var(--accent-glow);
+}
+
+.player-card .name {
+  font-size:.75rem;text-transform:uppercase;
+  letter-spacing:2px;color:var(--dim);
+  margin-bottom:.5rem;
+}
+
+.player-card .avg {
+  font-family:'JetBrains Mono',monospace;
+  font-size:2rem;font-weight:700;
+}
+
+.player-card .avg-label {
+  font-size:.65rem;color:var(--dim);
+  text-transform:uppercase;letter-spacing:1px;
+}
+
+/* Turn indicator */
+.turn-banner {
+  position:absolute;top:56px;left:0;right:0;
+  text-align:center;padding:10px;
+  font-weight:800;font-size:1rem;
+  letter-spacing:2px;text-transform:uppercase;
+  z-index:11;
+}
+
+.turn-p1 {
+  background:linear-gradient(90deg,transparent,rgba(0,229,160,.1),transparent);
+  color:var(--accent);
+}
+
+.turn-p2 {
+  background:linear-gradient(90deg,transparent,rgba(59,130,246,.1),transparent);
+  color:var(--blue);
+}
+
+/* Decoy instruction */
+.decoy-warning {
+  font-size:.75rem;color:var(--hot);
+  margin-top:.5rem;
+  opacity:.7;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ── MENU ── -->
+<div id="menu">
+  <div class="logo-mark">⚡</div>
+  <div class="menu-title">REFLEX</div>
+  <div class="menu-sub">Reaction Training System</div>
+
+  <div class="panel">
+    <div class="panel-label">Difficulty</div>
+    <div class="opt-row">
+      <label>Level</label>
+      <div class="seg-group" data-option="difficulty">
+        <button class="seg-btn active" data-val="easy">Easy</button>
+        <button class="seg-btn" data-val="medium">Medium</button>
+        <button class="seg-btn" data-val="hard">Hard</button>
+        <button class="seg-btn" data-val="pro">Pro</button>
+      </div>
+    </div>
+    <div class="difficulty-desc" id="diffDesc">
+      3 keys · Single stimulus · Generous timing — Perfect for warming up.
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">Settings</div>
+    <div class="opt-row">
+      <label>Rounds</label>
+      <div class="seg-group" data-option="rounds">
+        <button class="seg-btn" data-val="10">10</button>
+        <button class="seg-btn active" data-val="20">20</button>
+        <button class="seg-btn" data-val="30">30</button>
+      </div>
+    </div>
+    <div class="opt-row">
+      <label>Decoys</label>
+      <div class="seg-group" data-option="decoys">
+        <button class="seg-btn active" data-val="off">Off</button>
+        <button class="seg-btn" data-val="on">On</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="padding:1.2rem 2rem;">
+    <button class="start-btn btn-solo" id="btnSolo">⚡ Solo Training</button>
+    <button class="start-btn btn-multi" id="btnMulti">👥 Two Players — Turn-Based</button>
+  </div>
+</div>
+
+<!-- ── GAME SCREEN ── -->
+<div id="gameScreen" class="hidden">
+  <div class="game-bar">
+    <div class="bar-section">
+      <div class="stat-pill"><span class="label">Score</span> <span id="hudScore" class="mono">0</span></div>
+      <div class="stat-pill"><span class="label">Streak</span> <span id="hudStreak" class="mono">0</span></div>
+    </div>
+    <div class="bar-section">
+      <div class="stat-pill"><span class="label">Round</span> <span id="hudRound" class="mono">1/20</span></div>
+      <button class="back-btn" onclick="abortGame()">✕ Quit</button>
+    </div>
+  </div>
+
+  <div class="turn-banner hidden" id="turnBanner">Player 1 — Get Ready</div>
+
+  <div class="stimulus-zone">
+    <div class="status-area">
+      <div class="status-msg" id="statusMsg">GET READY</div>
+      <div class="reaction-time hidden" id="reactionTime">---</div>
+      <div class="reaction-unit hidden" id="reactionUnit">milliseconds</div>
+      <div class="round-counter" id="roundCounter"></div>
+    </div>
+
+    <div class="targets-row" id="targetsRow"></div>
+
+    <div class="color-legend" id="colorLegend"></div>
+
+    <div class="decoy-warning hidden" id="decoyWarning">⚠ RED = DON'T PRESS — Wait for colored targets only</div>
+
+    <div class="timeout-bar-container hidden" id="timeoutBarContainer">
+      <div class="timeout-bar" id="timeoutBar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── RESULTS SCREEN ── -->
+<div id="results" class="hidden">
+  <div class="results-card">
+    <div class="results-title" id="resultsTitle">Training Complete</div>
+    <div class="results-subtitle" id="resultsSub"></div>
+
+    <div id="soloResults">
+      <div class="big-stat" id="bigAvg">---</div>
+      <div class="big-stat-label">Average Reaction Time (ms)</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="val" id="rBest">---</div><div class="lbl">Best</div></div>
+        <div class="stat-box"><div class="val" id="rWorst">---</div><div class="lbl">Worst</div></div>
+        <div class="stat-box"><div class="val" id="rAccuracy">---</div><div class="lbl">Accuracy</div></div>
+      </div>
+      <div class="sparkline-container">
+        <div class="sparkline-label">Reaction Times Over Rounds</div>
+        <canvas class="sparkline" id="sparkline"></canvas>
+      </div>
+    </div>
+
+    <div id="multiResults" class="hidden">
+      <div class="player-results">
+        <div class="player-card" id="mpCard1">
+          <div class="name" style="color:var(--accent)">Player 1</div>
+          <div class="avg" id="mp1Avg" style="color:var(--accent)">---</div>
+          <div class="avg-label">avg ms</div>
+        </div>
+        <div class="player-card" id="mpCard2">
+          <div class="name" style="color:var(--blue)">Player 2</div>
+          <div class="avg" id="mp2Avg" style="color:var(--blue)">---</div>
+          <div class="avg-label">avg ms</div>
+        </div>
+      </div>
+      <div class="status-msg" id="mpWinner" style="font-size:1.2rem;margin-bottom:1.5rem;"></div>
+      <div class="sparkline-container">
+        <div class="sparkline-label">Head to Head</div>
+        <canvas class="sparkline" id="sparklineMulti"></canvas>
+      </div>
+    </div>
+
+    <button class="start-btn btn-solo" onclick="backToMenu()" style="margin-top:.5rem;">Back to Menu</button>
+  </div>
+</div>
+
+<script>
+// ── CONFIGURATION ──
+const DIFFICULTIES = {
+  easy:   { keys:['A','S','D'],                       colors:['green'],                               timeout:3000, desc:'3 keys · Single color · Generous timing — Perfect for warming up.' },
+  medium: { keys:['A','S','D','F'],                   colors:['green','yellow'],                     timeout:2200, desc:'4 keys · 2 colors · Faster pace — Challenge your focus.' },
+  hard:   { keys:['A','S','D','F','G'],               colors:['green','yellow','blue'],              timeout:1600, desc:'5 keys · 3 colors · Tight timing — Train like an athlete.' },
+  pro:    { keys:['A','S','D','F','G','H'],           colors:['green','yellow','blue','cyan','purple'], timeout:1200, desc:'6 keys · 5 colors · Blazing speed — Elite reaction training.' }
+};
+
+const COLOR_LABELS = {
+  green:'Go', yellow:'Caution', blue:'Focus', cyan:'Quick', purple:'Snap'
+};
+
+// ── STATE ──
+let cfg = {};
+let opts = { difficulty:'easy', rounds:'20', decoys:'off' };
+let multiPlayer = false;
+let currentPlayer = 0; // 0 or 1
+let roundNum = 0, totalRounds = 20;
+let stimulusKey = null, stimulusColor = null, stimulusTime = 0;
+let isDecoy = false;
+let waiting = false; // waiting for input
+let inCountdown = false;
+let streak = 0, score = 0;
+let results = [[], []]; // per player
+let timeoutHandle = null, delayHandle = null, countdownHandle = null;
+let timeoutAnimFrame = null;
+
+// ── MENU ──
+document.querySelectorAll('.seg-group').forEach(group => {
+  group.querySelectorAll('.seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      opts[group.dataset.option] = btn.dataset.val;
+      if (group.dataset.option === 'difficulty') updateDiffDesc();
+    });
+  });
+});
+
+function updateDiffDesc() {
+  document.getElementById('diffDesc').textContent = DIFFICULTIES[opts.difficulty].desc;
+}
+
+document.getElementById('btnSolo').addEventListener('click', () => startGame(false));
+document.getElementById('btnMulti').addEventListener('click', () => startGame(true));
+
+// ── GAME START ──
+function startGame(multi) {
+  multiPlayer = multi;
+  currentPlayer = 0;
+  cfg = DIFFICULTIES[opts.difficulty];
+  totalRounds = parseInt(opts.rounds);
+  roundNum = 0;
+  streak = 0; score = 0;
+  results = [[], []];
+
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('gameScreen').classList.remove('hidden');
+
+  buildTargets();
+  updateHUD();
+
+  if (opts.decoys === 'on') {
+    document.getElementById('decoyWarning').classList.remove('hidden');
+  } else {
+    document.getElementById('decoyWarning').classList.add('hidden');
+  }
+
+  if (multiPlayer) {
+    showTurnBanner(0, () => startFirstRound());
+  } else {
+    document.getElementById('turnBanner').classList.add('hidden');
+    startFirstRound();
+  }
+}
+
+function buildTargets() {
+  const row = document.getElementById('targetsRow');
+  row.innerHTML = '';
+  cfg.keys.forEach(k => {
+    const el = document.createElement('div');
+    el.className = 'key-target';
+    el.id = 'key-' + k;
+    el.innerHTML = `<span class="key-letter">${k}</span><span class="key-label">key</span>`;
+    row.appendChild(el);
+  });
+
+  // Color legend
+  const legend = document.getElementById('colorLegend');
+  legend.innerHTML = '';
+  cfg.colors.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    const cssColor = c === 'green' ? 'var(--accent)' : c === 'yellow' ? 'var(--warn)' : c === 'blue' ? 'var(--blue)' : c === 'cyan' ? 'var(--cyan)' : 'var(--purple)';
+    item.innerHTML = `<span class="legend-dot" style="background:${cssColor}"></span> ${COLOR_LABELS[c] || c}`;
+    legend.appendChild(item);
+  });
+  if (opts.decoys === 'on') {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<span class="legend-dot" style="background:var(--hot)"></span> Decoy (don't press!)`;
+    legend.appendChild(item);
+  }
+}
+
+function showTurnBanner(player, cb) {
+  const banner = document.getElementById('turnBanner');
+  banner.classList.remove('hidden','turn-p1','turn-p2');
+  banner.classList.add(player === 0 ? 'turn-p1' : 'turn-p2');
+  banner.textContent = `Player ${player + 1} — Get Ready`;
+  setTimeout(cb, 1500);
+}
+
+// ── ROUND FLOW ──
+const NEXT_STIMULUS_DELAY = 1000; // 1 second after action, next key lights up
+
+function startRound() {
+  roundNum++;
+  updateHUD();
+  clearAllTargets();
+
+  document.getElementById('timeoutBarContainer').classList.add('hidden');
+  waiting = false;
+  isDecoy = false;
+
+  // Fixed 1-second gap then immediately show next stimulus
+  delayHandle = setTimeout(() => showStimulus(), NEXT_STIMULUS_DELAY);
+}
+
+// First round of a session uses a longer initial delay so the player can orient
+function startFirstRound() {
+  roundNum++;
+  updateHUD();
+  clearAllTargets();
+
+  const msg = document.getElementById('statusMsg');
+  const rt = document.getElementById('reactionTime');
+  const ru = document.getElementById('reactionUnit');
+  rt.classList.add('hidden'); ru.classList.add('hidden');
+  msg.textContent = 'GET READY';
+  msg.style.color = 'var(--dim)';
+
+  document.getElementById('timeoutBarContainer').classList.add('hidden');
+  waiting = false;
+  isDecoy = false;
+
+  // Slightly longer first delay so the player can settle in
+  delayHandle = setTimeout(() => showStimulus(), 1500);
+}
+
+function showStimulus() {
+  // Clear previous round visuals
+  clearAllTargets();
+  document.getElementById('reactionTime').classList.add('hidden');
+  document.getElementById('reactionUnit').classList.add('hidden');
+
+  // Pick random key
+  const keyIdx = Math.floor(Math.random() * cfg.keys.length);
+  stimulusKey = cfg.keys[keyIdx];
+
+  // Decoy chance (30% if on)
+  isDecoy = opts.decoys === 'on' && Math.random() < 0.3;
+  stimulusColor = isDecoy ? 'red' : cfg.colors[Math.floor(Math.random() * cfg.colors.length)];
+
+  // Light up the target
+  const el = document.getElementById('key-' + stimulusKey);
+  el.className = 'key-target lit-' + stimulusColor;
+
+  const msg = document.getElementById('statusMsg');
+  if (isDecoy) {
+    msg.textContent = 'DON\'T PRESS!';
+    msg.style.color = 'var(--hot)';
+  } else {
+    msg.textContent = 'NOW!';
+    msg.style.color = 'var(--accent)';
+  }
+
+  stimulusTime = performance.now();
+  waiting = true;
+
+  // Start timeout bar
+  startTimeoutBar();
+
+  // Timeout
+  timeoutHandle = setTimeout(() => {
+    if (!waiting) return;
+    waiting = false;
+    if (isDecoy) {
+      // Good — they didn't press
+      handleDecoySuccess();
+    } else {
+      // Missed
+      handleMiss();
+    }
+  }, cfg.timeout);
+}
+
+function startTimeoutBar() {
+  const container = document.getElementById('timeoutBarContainer');
+  const bar = document.getElementById('timeoutBar');
+  container.classList.remove('hidden');
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      bar.style.transition = `width ${cfg.timeout}ms linear`;
+      bar.style.width = '0%';
+    });
+  });
+}
+
+// ── INPUT ──
+window.addEventListener('keydown', e => {
+  if (!waiting) return;
+  const key = e.key.toUpperCase();
+  if (!cfg.keys.includes(key)) return;
+
+  const rt = performance.now() - stimulusTime;
+  waiting = false;
+  clearTimeout(timeoutHandle);
+
+  if (isDecoy) {
+    // They pressed during a decoy — penalty
+    handleDecoyFail(key);
+    return;
+  }
+
+  if (key === stimulusKey) {
+    handleHit(rt);
+  } else {
+    handleWrongKey(key);
+  }
+});
+
+function handleHit(rt) {
+  const rtMs = Math.round(rt);
+  results[currentPlayer].push(rtMs);
+  streak++;
+  const bonus = streak >= 5 ? 3 : streak >= 3 ? 2 : 1;
+  score += Math.max(1, Math.round((cfg.timeout - rtMs) / 10)) * bonus;
+
+  const el = document.getElementById('key-' + stimulusKey);
+  el.classList.add('hit');
+
+  const msg = document.getElementById('statusMsg');
+  const rtEl = document.getElementById('reactionTime');
+  const ruEl = document.getElementById('reactionUnit');
+
+  msg.textContent = rtMs < 200 ? 'INCREDIBLE!' : rtMs < 300 ? 'GREAT!' : rtMs < 400 ? 'GOOD' : 'OK';
+  msg.style.color = rtMs < 200 ? 'var(--cyan)' : rtMs < 300 ? 'var(--accent)' : rtMs < 400 ? 'var(--warn)' : 'var(--dim)';
+
+  rtEl.classList.remove('hidden');
+  ruEl.classList.remove('hidden');
+  rtEl.textContent = rtMs;
+  rtEl.style.color = msg.style.color;
+
+  updateHUD();
+  // Next stimulus lights up ~1s after this press (handled by startRound)
+  nextRound();
+}
+
+function handleMiss() {
+  results[currentPlayer].push(null); // null = miss
+  streak = 0;
+
+  const el = document.getElementById('key-' + stimulusKey);
+  el.classList.add('miss');
+
+  const msg = document.getElementById('statusMsg');
+  msg.textContent = 'TOO SLOW';
+  msg.style.color = 'var(--hot)';
+
+  const rtEl = document.getElementById('reactionTime');
+  const ruEl = document.getElementById('reactionUnit');
+  rtEl.classList.remove('hidden'); ruEl.classList.remove('hidden');
+  rtEl.textContent = '---';
+  rtEl.style.color = 'var(--hot)';
+
+  updateHUD();
+  nextRound();
+}
+
+function handleWrongKey(key) {
+  results[currentPlayer].push(null);
+  streak = 0;
+
+  const el = document.getElementById('key-' + key);
+  if (el) { el.classList.add('miss'); }
+
+  const msg = document.getElementById('statusMsg');
+  msg.textContent = 'WRONG KEY';
+  msg.style.color = 'var(--hot)';
+
+  const rtEl = document.getElementById('reactionTime');
+  const ruEl = document.getElementById('reactionUnit');
+  rtEl.classList.remove('hidden'); ruEl.classList.remove('hidden');
+  rtEl.textContent = '✕';
+  rtEl.style.color = 'var(--hot)';
+
+  updateHUD();
+  nextRound();
+}
+
+function handleDecoyFail(key) {
+  results[currentPlayer].push(null);
+  streak = 0;
+
+  const el = document.getElementById('key-' + key);
+  if (el) { el.classList.add('miss'); }
+
+  const msg = document.getElementById('statusMsg');
+  msg.textContent = 'DECOY — DON\'T PRESS!';
+  msg.style.color = 'var(--hot)';
+
+  updateHUD();
+  nextRound();
+}
+
+function handleDecoySuccess() {
+  // Award a small bonus for restraint
+  score += 5;
+  streak++;
+
+  const msg = document.getElementById('statusMsg');
+  msg.textContent = 'GOOD RESTRAINT';
+  msg.style.color = 'var(--accent)';
+
+  updateHUD();
+  nextRound();
+}
+
+function nextRound() {
+  clearAllTargets();
+  document.getElementById('timeoutBarContainer').classList.add('hidden');
+
+  if (multiPlayer) {
+    // Each player does totalRounds
+    const p1Done = results[0].length >= totalRounds;
+    const p2Done = results[1].length >= totalRounds;
+
+    if (currentPlayer === 0 && results[0].length >= totalRounds) {
+      // Switch to player 2
+      currentPlayer = 1;
+      roundNum = 0;
+      streak = 0;
+      showTurnBanner(1, () => startFirstRound());
+      return;
+    }
+    if (currentPlayer === 1 && results[1].length >= totalRounds) {
+      showResults();
+      return;
+    }
+    startRound();
+  } else {
+    if (results[0].length >= totalRounds) {
+      showResults();
+      return;
+    }
+    startRound();
+  }
+}
+
+function clearAllTargets() {
+  cfg.keys.forEach(k => {
+    const el = document.getElementById('key-' + k);
+    if (el) el.className = 'key-target';
+  });
+}
+
+function updateHUD() {
+  const playerResults = results[currentPlayer];
+  document.getElementById('hudScore').textContent = score;
+  document.getElementById('hudStreak').textContent = streak;
+  const rn = multiPlayer ? playerResults.length + (waiting ? 0 : 0) : results[0].length;
+  document.getElementById('hudRound').textContent = `${Math.min(rn + 1, totalRounds)}/${totalRounds}`;
+
+  // Round counter
+  const rc = document.getElementById('roundCounter');
+  if (multiPlayer) {
+    rc.textContent = `Player ${currentPlayer + 1} · Round ${Math.min(playerResults.length + 1, totalRounds)} of ${totalRounds}`;
+  } else {
+    rc.textContent = '';
+  }
+}
+
+// ── RESULTS ──
+function showResults() {
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('results').classList.remove('hidden');
+  clearTimeout(timeoutHandle);
+  clearTimeout(delayHandle);
+
+  if (multiPlayer) {
+    document.getElementById('soloResults').classList.add('hidden');
+    document.getElementById('multiResults').classList.remove('hidden');
+    showMultiResults();
+  } else {
+    document.getElementById('soloResults').classList.remove('hidden');
+    document.getElementById('multiResults').classList.add('hidden');
+    showSoloResults();
+  }
+}
+
+function calcStats(arr) {
+  const valid = arr.filter(v => v !== null);
+  if (valid.length === 0) return { avg:0, best:0, worst:0, accuracy:0 };
+  const avg = Math.round(valid.reduce((a,b) => a+b, 0) / valid.length);
+  const best = Math.min(...valid);
+  const worst = Math.max(...valid);
+  const accuracy = Math.round((valid.length / arr.length) * 100);
+  return { avg, best, worst, accuracy };
+}
+
+function showSoloResults() {
+  const s = calcStats(results[0]);
+  document.getElementById('resultsTitle').textContent = 'Training Complete';
+  document.getElementById('resultsSub').textContent = `${opts.difficulty.toUpperCase()} · ${totalRounds} rounds${opts.decoys === 'on' ? ' · Decoys' : ''}`;
+  document.getElementById('bigAvg').textContent = s.avg || '---';
+  document.getElementById('rBest').textContent = s.best ? s.best + 'ms' : '---';
+  document.getElementById('rWorst').textContent = s.worst ? s.worst + 'ms' : '---';
+  document.getElementById('rAccuracy').textContent = s.accuracy + '%';
+  drawSparkline('sparkline', [results[0]], ['#00e5a0']);
+  // Report score to Eggplant Portal (score = inverse avg reaction time, so higher is better)
+  try{parent.postMessage({type:'eggplant_score',score},'*')}catch(e){}
+}
+
+function showMultiResults() {
+  const s1 = calcStats(results[0]);
+  const s2 = calcStats(results[1]);
+
+  document.getElementById('mp1Avg').textContent = s1.avg || '---';
+  document.getElementById('mp2Avg').textContent = s2.avg || '---';
+
+  const card1 = document.getElementById('mpCard1');
+  const card2 = document.getElementById('mpCard2');
+  card1.classList.remove('winner');
+  card2.classList.remove('winner');
+
+  const winner = document.getElementById('mpWinner');
+  // Lower avg is better
+  if (s1.avg && s2.avg) {
+    if (s1.avg < s2.avg) {
+      card1.classList.add('winner');
+      winner.textContent = '🏆 Player 1 Wins!';
+      winner.style.color = 'var(--accent)';
+    } else if (s2.avg < s1.avg) {
+      card2.classList.add('winner');
+      winner.textContent = '🏆 Player 2 Wins!';
+      winner.style.color = 'var(--blue)';
+    } else {
+      winner.textContent = '🤝 It\'s a Tie!';
+      winner.style.color = 'var(--warn)';
+    }
+  } else {
+    winner.textContent = '';
+  }
+
+  document.getElementById('resultsTitle').textContent = 'Duel Complete';
+  document.getElementById('resultsSub').textContent = `${opts.difficulty.toUpperCase()} · ${totalRounds} rounds each`;
+
+  drawSparkline('sparklineMulti', [results[0], results[1]], ['#00e5a0', '#3b82f6']);
+}
+
+function drawSparkline(canvasId, datasets, colors) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.clientWidth * dpr;
+  canvas.height = canvas.clientHeight * dpr;
+  ctx.scale(dpr, dpr);
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Find global max
+  let allVals = datasets.flat().filter(v => v !== null);
+  if (allVals.length === 0) return;
+  const maxVal = Math.max(...allVals);
+  const minVal = Math.min(...allVals);
+  const range = maxVal - minVal || 100;
+
+  datasets.forEach((data, di) => {
+    const color = colors[di];
+    const valid = data.map((v, i) => v !== null ? { x: i, y: v } : null).filter(Boolean);
+    if (valid.length < 2) return;
+
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+
+    valid.forEach((pt, i) => {
+      const x = (pt.x / (data.length - 1)) * (w - 20) + 10;
+      const y = h - 10 - ((pt.y - minVal) / range) * (h - 24);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Dots
+    valid.forEach(pt => {
+      const x = (pt.x / (data.length - 1)) * (w - 20) + 10;
+      const y = h - 10 - ((pt.y - minVal) / range) * (h - 24);
+      ctx.beginPath();
+      ctx.fillStyle = color;
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Misses as X
+    data.forEach((v, i) => {
+      if (v === null) {
+        const x = (i / (data.length - 1)) * (w - 20) + 10;
+        ctx.strokeStyle = '#ff3b5c';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x - 4, h - 6); ctx.lineTo(x + 4, h - 14);
+        ctx.moveTo(x + 4, h - 6); ctx.lineTo(x - 4, h - 14);
+        ctx.stroke();
+      }
+    });
+  });
+}
+
+function abortGame() {
+  clearTimeout(timeoutHandle);
+  clearTimeout(delayHandle);
+  clearTimeout(countdownHandle);
+  waiting = false;
+  backToMenu();
+}
+
+function backToMenu() {
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+}
+
+</script>
+</body>
+</html>
