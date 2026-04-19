@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STICKMAN QUEST</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1410;overflow:hidden;font-family:monospace;color:#fff}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+#title{position:absolute;inset:0;background:linear-gradient(180deg,#1a1410,#2a1a10);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;cursor:pointer}
+#title h1{font-size:clamp(1.8rem,5vw,3.5rem);letter-spacing:.12em;color:#e8c870;text-shadow:0 2px 15px rgba(232,200,112,.3)}
+#title .sub{font-size:clamp(.55rem,1.3vw,.75rem);letter-spacing:.4em;color:#8a7050;margin-top:.3rem}
+#title .pr{font-size:.65rem;color:#5a4a30;margin-top:1.5rem;animation:bl 2s infinite}
+@keyframes bl{0%,100%{opacity:.2}50%{opacity:.6}}
+#title .ctrl{position:absolute;bottom:16px;font-size:.5rem;color:#3a2a1a;text-align:center;line-height:2}
+#go{position:absolute;inset:0;background:rgba(10,5,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:20}
+#go h2{font-size:1.8rem;color:#cc3030;letter-spacing:.08em}
+#go .sc{font-size:1.2rem;color:#e8c870;margin:.4rem 0}
+#go .st{font-size:.6rem;color:#6a5a40;letter-spacing:.08em;margin-bottom:.8rem}
+#go button{background:none;border:1px solid rgba(232,200,112,.2);color:#e8c870;font-family:monospace;font-size:.65rem;padding:7px 20px;letter-spacing:.12em;cursor:pointer}
+#go button:hover{border-color:#e8c870;background:rgba(232,200,112,.08)}
+#lvlUp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none;z-index:15;text-align:center;
+  background:rgba(232,200,112,.12);border:1px solid rgba(232,200,112,.3);padding:12px 24px;border-radius:4px}
+#lvlUp h3{color:#e8c870;font-size:1rem;letter-spacing:.1em}
+#lvlUp p{color:#a89060;font-size:.6rem;margin-top:4px}
+#win{position:absolute;inset:0;background:rgba(10,5,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:20}
+#win h2{font-size:1.8rem;color:#e8c870;letter-spacing:.08em}
+#win .sc{font-size:1.2rem;color:#70cc70;margin:.4rem 0}
+#win button{background:none;border:1px solid rgba(232,200,112,.2);color:#e8c870;font-family:monospace;font-size:.65rem;padding:7px 20px;letter-spacing:.12em;cursor:pointer;margin-top:.8rem}
+/* Mobile controls */
+#mob{display:none;position:fixed;bottom:0;left:0;right:0;z-index:15;pointer-events:none;padding:8px}
+.mr{display:flex;justify-content:space-between;align-items:flex-end}
+.mb{pointer-events:all;width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;color:rgba(255,255,255,.35);-webkit-tap-highlight-color:transparent;user-select:none}
+.mb:active{background:rgba(255,255,255,.15)}
+.md{display:flex;gap:5px;align-items:center}
+.ma{display:flex;gap:5px;align-items:center}
+.mb.sw{border-color:rgba(200,200,200,.15);color:rgba(200,200,200,.4)}
+.mb.bw{border-color:rgba(180,120,60,.15);color:rgba(180,120,60,.4)}
+.mb.mg{border-color:rgba(100,140,255,.15);color:rgba(100,140,255,.4)}
+.mb.jp{border-color:rgba(232,200,112,.15);color:rgba(232,200,112,.4)}
+</style></head><body>
+<div id="title" onclick="startGame()">
+<h1>STICKMAN QUEST</h1>
+<div class="sub">A MEDIEVAL ADVENTURE</div>
+<div class="pr">CLICK OR PRESS SPACE</div>
+<div class="ctrl">←/→ MOVE · W/SPACE JUMP · Q SWORD · A BOW · Z MAGIC</div>
+</div>
+<canvas id="c"></canvas>
+<div id="go"><h2>YOU DIED</h2><div class="sc" id="goSc">0</div><div class="st" id="goSt"></div><button onclick="restartLevel()">RETRY LEVEL</button></div>
+<div id="lvlUp"><h3>LEVEL UP!</h3><p id="luTxt"></p></div>
+<div id="win"><h2>VICTORY!</h2><div class="sc" id="winSc">0</div><button onclick="startGame()">PLAY AGAIN</button></div>
+<div id="mob"><div class="mr">
+<div class="md"><div class="mb" id="mL">◀</div><div class="mb" id="mR">▶</div></div>
+<div class="ma">
+<div class="mb sw" id="mS">⚔</div>
+<div class="mb bw" id="mB">🏹</div>
+<div class="mb mg" id="mM">✦</div>
+<div class="mb jp" id="mJ">▲</div>
+</div></div></div>
+
+<script>
+const cv=document.getElementById('c'),c=cv.getContext('2d');
+let W,H,SC;
+function rez(){SC=Math.max(2,Math.floor(Math.min(innerWidth,innerHeight)/260));W=Math.ceil(innerWidth/SC);H=Math.ceil(innerHeight/SC);cv.width=W;cv.height=H;cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px'}
+addEventListener('resize',rez);rez();
+
+// ═══ CONSTANTS ═══
+const GRAV=.22,GROUND=H-30;
+const K={};let lt=0;
+
+// ═══ STATE ═══
+let GS='title',lvl=0;
+let P,enemies,projectiles,particles,platforms,deathParts,pickups;
+let camX=0,lvlW=0,flagX=0;
+let xp=0,plvl=1,totalKills=0;
+// Level up thresholds
+const LVL_XP=[0,50,150,300,500,800,1200,1800,2500,9999];
+
+// Stats derived from level
+function pStats(){return{
+  maxHp:20+plvl*5, swordDmg:5+plvl, arrowDmg:3+plvl, magicDmg:8+plvl*2,
+  mana:100, manaMax:100, manaRegen:5+plvl
+}}
+
+// ═══ INPUT ═══
+addEventListener('keydown',e=>{K[e.key.toLowerCase()]=true;K[e.code]=true;
+  if((e.key===' '||e.key==='Enter')&&GS==='title')startGame();
+  if((e.key===' '||e.key==='Enter')&&GS==='over')restartLevel()});
+addEventListener('keyup',e=>{K[e.key.toLowerCase()]=false;K[e.code]=false});
+const isMob='ontouchstart'in window||navigator.maxTouchPoints>0;
+if(isMob)document.getElementById('mob').style.display='block';
+function mobB(id,fn){const el=document.getElementById(id);
+  el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();fn(true);if(GS==='title')startGame()},{passive:false});
+  el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();fn(false)},{passive:false});
+  el.addEventListener('touchcancel',()=>fn(false))}
+mobB('mL',v=>{K.ArrowLeft=v});mobB('mR',v=>{K.ArrowRight=v});
+mobB('mJ',v=>{K.w=v;K[' ']=v});
+mobB('mS',v=>{K.q=v});mobB('mB',v=>{K.a=v});mobB('mM',v=>{K.z=v});
+document.getElementById('title').onclick=()=>startGame();
+
+// ═══ CREATURE DATABASE ═══
+const CREATURES={
+  // Tier 1
+  rat:{hp:5,w:6,h:4,spd:.6,xp:5,col:'#8a7a6a',tier:1,ai:'run',dmg:3},
+  bat:{hp:5,w:7,h:5,spd:.5,xp:5,col:'#5a4a5a',tier:1,ai:'fly',dmg:3},
+  hatchling:{hp:10,w:8,h:7,spd:.4,xp:10,col:'#50aa50',tier:1,ai:'hop',dmg:5,proj:'fire_sm'},
+  skeleton:{hp:10,w:6,h:12,spd:.3,xp:10,col:'#d0d0c0',tier:1,ai:'walk',dmg:4,proj:'bone'},
+  slime:{hp:8,w:8,h:6,spd:.25,xp:8,col:'#40cc40',tier:1,ai:'bounce',dmg:3,split:true},
+  // Tier 2
+  guard:{hp:20,w:6,h:13,spd:.35,xp:20,col:'#8a8a9a',tier:2,ai:'patrol',dmg:6},
+  archer:{hp:15,w:6,h:13,spd:0,xp:15,col:'#6a8a5a',tier:2,ai:'shoot',dmg:4,proj:'arrow'},
+  knight:{hp:20,w:7,h:13,spd:.5,xp:25,col:'#a0a0b0',tier:2,ai:'charge',dmg:8,armor:true},
+  bandit:{hp:15,w:6,h:12,spd:.6,xp:18,col:'#5a3a2a',tier:2,ai:'jump',dmg:5,proj:'dagger'},
+  pikeman:{hp:18,w:6,h:14,spd:.3,xp:20,col:'#7a7a8a',tier:2,ai:'walk',dmg:7,reach:true},
+  // Tier 3
+  ogre:{hp:40,w:12,h:18,spd:.2,xp:40,col:'#6a8a4a',tier:3,ai:'smash',dmg:12},
+  troll:{hp:35,w:10,h:16,spd:.25,xp:35,col:'#5a6a3a',tier:3,ai:'walk',dmg:10,regen:1},
+  shaman:{hp:25,w:6,h:11,spd:.4,xp:30,col:'#4a6a3a',tier:3,ai:'mage',dmg:6,proj:'magic_bolt'},
+  werewolf:{hp:30,w:8,h:12,spd:.8,xp:35,col:'#6a5a4a',tier:3,ai:'lunge',dmg:10},
+  harpy:{hp:25,w:9,h:10,spd:.5,xp:30,col:'#8a6a7a',tier:3,ai:'divebomb',dmg:8},
+  // Tier 4
+  dragon:{hp:80,w:18,h:14,spd:.3,xp:80,col:'#cc3030',tier:4,ai:'dragon',dmg:15,proj:'fire_lg'},
+  griffin:{hp:60,w:14,h:11,spd:.6,xp:60,col:'#c0a060',tier:4,ai:'swoop',dmg:12},
+  wraith:{hp:50,w:8,h:14,spd:.35,xp:50,col:'#6060a0',tier:4,ai:'phase',dmg:10,slow:true},
+  cyclops:{hp:70,w:14,h:20,spd:.15,xp:70,col:'#9a8a6a',tier:4,ai:'throw',dmg:14,proj:'boulder'},
+  // Tier 5
+  necromancer:{hp:100,w:8,h:15,spd:.2,xp:100,col:'#4a2a5a',tier:5,ai:'necro',dmg:12,proj:'dark'},
+};
+
+// ═══ LEVEL DEFINITIONS ═══
+const LEVELS=[
+  {name:'The Village Outskirts',bg:'#2a3828',ground:'#4a5a38',sky:'#3a4850',
+    enemies:['rat','bat','hatchling','skeleton','slime'],count:15,w:1800},
+  {name:'The Castle Walls',bg:'#3a3a40',ground:'#5a5a64',sky:'#2a2a3a',
+    enemies:['rat','skeleton','guard','archer','knight','bandit','pikeman'],count:18,w:2200},
+  {name:'The Dark Forest',bg:'#1a2a18',ground:'#3a4a28',sky:'#1a2020',
+    enemies:['bat','hatchling','skeleton','ogre','troll','shaman','werewolf','harpy'],count:20,w:2600},
+  {name:'Dragon\'s Peak',bg:'#3a2818',ground:'#5a4a30',sky:'#2a1a1a',
+    enemies:['guard','knight','ogre','dragon','griffin','wraith','cyclops'],count:18,w:3000},
+  {name:'The Necromancer\'s Tower',bg:'#1a1020',ground:'#3a2a40',sky:'#0a0818',
+    enemies:['skeleton','knight','wraith','ogre','dragon','necromancer'],count:22,w:3400},
+];
+
+// ═══ LEVEL BUILDING ═══
+function buildLevel(idx){
+  const L=LEVELS[idx];
+  platforms=[];enemies=[];projectiles=[];particles=[];deathParts=[];pickups=[];
+  lvlW=L.w;flagX=lvlW-40;
+
+  // Ground segments with gaps
+  let gx=0;
+  while(gx<lvlW){
+    const w=40+Math.random()*80;
+    platforms.push({x:gx,y:GROUND,w,h:30,type:'ground'});
+    gx+=w;
+    // Gap occasionally
+    if(gx>100&&gx<lvlW-150&&Math.random()<.25){
+      gx+=18+Math.random()*15;
+    }
+  }
+
+  // Floating platforms
+  const platCount=5+idx*3;
+  for(let i=0;i<platCount;i++){
+    const px=80+Math.random()*(lvlW-160);
+    const py=GROUND-30-Math.random()*50;
+    platforms.push({x:px,y:py,w:20+Math.random()*30,h:4,type:'platform'});
+  }
+
+  // Spawn enemies
+  const pool=L.enemies;
+  for(let i=0;i<L.count;i++){
+    const type=pool[~~(Math.random()*pool.length)];
+    const cr=CREATURES[type];
+    const ex=80+Math.random()*(lvlW-160);
+    const ey=cr.ai==='fly'||cr.ai==='divebomb'||cr.ai==='swoop'||cr.ai==='dragon'?
+      GROUND-cr.h-10-Math.random()*20:GROUND-cr.h;
+    enemies.push({
+      type,ex:ex,x:ex,y:ey,vx:0,vy:0,
+      hp:cr.hp,maxHp:cr.hp,
+      w:cr.w,h:cr.h,
+      face:Math.random()>.5?1:-1,
+      atkCD:0,projCD:0,
+      phase:Math.random()*Math.PI*2,
+      stunT:0,
+    });
+  }
+
+  // Sort enemies by x position
+  enemies.sort((a,b)=>a.x-b.x);
+
+  // Pickups — health potions
+  for(let i=0;i<3+idx;i++){
+    pickups.push({x:100+Math.random()*(lvlW-200),y:GROUND-8,type:'potion',got:false});
+  }
+}
+
+// ═══ START ═══
+function startGame(){
+  document.getElementById('title').style.display='none';
+  document.getElementById('go').style.display='none';
+  document.getElementById('win').style.display='none';
+  GS='playing';lvl=0;xp=0;plvl=1;totalKills=0;
+  initPlayer();buildLevel(0);
+  lt=performance.now();requestAnimationFrame(loop);
+}
+function restartLevel(){
+  document.getElementById('go').style.display='none';
+  GS='playing';initPlayer();buildLevel(lvl);
+  lt=performance.now();requestAnimationFrame(loop);
+}
+function initPlayer(){
+  const s=pStats();
+  P={x:40,y:GROUND-15,vx:0,vy:0,w:6,h:13,hp:s.maxHp,maxHp:s.maxHp,
+    mana:s.manaMax,manaMax:s.manaMax,face:1,grounded:false,
+    invT:0,swordCD:0,bowCD:0,magicCD:0,swordAnim:0,
+    dead:false,deadT:0};
+  camX=0;
+}
+
+// ═══ COLLISION ═══
+function boxHit(ax,ay,aw,ah,bx,by,bw,bh){return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by}
+function solidAt(px,py,pw,ph){
+  for(const p of platforms){if(boxHit(px,py,pw,ph,p.x,p.y,p.w,p.h))return p}
+  return null;
+}
+
+// ═══ PARTICLES ═══
+function sPart(x,y,n,col,pow){
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=(.3+Math.random()*1.5)*pow;
+  particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-.5,life:.3+Math.random()*.4,ml:.5,sz:1+Math.random()*2,col})}
+}
+
+// ═══ UPDATE ═══
+function upd(dt){
+  if(GS!=='playing')return;
+  const an=performance.now()/1000;
+  const fdt=Math.min(dt*60,3);
+  const s=pStats();
+
+  if(P.dead){
+    P.deadT+=dt;
+    // Blood ooze
+    if(P.deadT<3&&Math.random()<.3){
+      deathParts.push({x:P.x+P.w/2+(Math.random()-.5)*6,y:P.y+P.h-1,
+        vx:(Math.random()-.5)*.3,vy:0,life:8,sz:1+Math.random()*2});
+    }
+    deathParts.forEach(d=>{d.x+=d.vx;d.vy+=.01;d.y+=d.vy;d.life-=dt*.3});
+    deathParts=deathParts.filter(d=>d.life>0);
+    return;
+  }
+
+  // ── Player Movement ── (arrows/left-right only, A is now bow)
+  let mx=0;
+  if(K.arrowleft||K.ArrowLeft)mx=-1;
+  if(K.arrowright||K.ArrowRight)mx=1;
+  P.vx+=mx*.4*fdt;P.vx*=.85;
+  if(Math.abs(P.vx)>4.5)P.vx=Math.sign(P.vx)*4.5;
+  if(mx)P.face=mx;
+
+  // Jump
+  if((K.w||K[' ']||K.arrowup||K.ArrowUp)&&P.grounded){P.vy=-5.5;P.grounded=false}
+  P.vy+=GRAV*fdt;if(P.vy>5)P.vy=5;
+
+  // X collision
+  const nx=P.x+P.vx*fdt;
+  const hx=solidAt(nx,P.y,P.w,P.h);
+  if(hx){if(P.vx>0)P.x=hx.x-P.w;else P.x=hx.x+hx.w;P.vx=0}else P.x=nx;
+
+  // Y collision
+  const ny=P.y+P.vy*fdt;
+  const hy=solidAt(P.x,ny,P.w,P.h);
+  P.grounded=false;
+  if(hy){if(P.vy>0){P.y=hy.y-P.h;P.grounded=true}else P.y=hy.y+hy.h;P.vy=0}else P.y=ny;
+
+  if(P.y>H+50){P.hp=0;die();return}
+  if(P.x<0)P.x=0;
+  P.invT=Math.max(0,P.invT-dt);
+
+  // Mana regen
+  P.mana=Math.min(P.manaMax,P.mana+s.manaRegen*dt);
+
+  // ── Sword Attack ──
+  P.swordCD=Math.max(0,P.swordCD-dt);
+  P.swordAnim=Math.max(0,P.swordAnim-dt*5);
+  if(K.q&&P.swordCD<=0){
+    P.swordCD=.3;P.swordAnim=1;
+    const sx=P.x+P.w/2+P.face*12,sy=P.y+P.h/2;
+    enemies.forEach(e=>{
+      const cr=CREATURES[e.type];
+      if(boxHit(sx-6,sy-8,12,16,e.x,e.y,e.w,e.h)){
+        hitEnemy(e,s.swordDmg);
+      }
+    });
+    sPart(P.x+P.w/2+P.face*10,P.y+4,3,'#ccc',.8);
+  }
+
+  // ── Bow ──
+  P.bowCD=Math.max(0,P.bowCD-dt);
+  if(K.a&&P.bowCD<=0){
+    P.bowCD=.5;
+    projectiles.push({x:P.x+P.w/2+P.face*4,y:P.y+4,vx:P.face*4,vy:0,
+      dmg:s.arrowDmg,type:'arrow',life:2,fromPlayer:true,col:'#c0a060'});
+  }
+
+  // ── Magic ──
+  P.magicCD=Math.max(0,P.magicCD-dt);
+  if(K.z&&P.magicCD<=0&&P.mana>=25){
+    P.magicCD=.6;P.mana-=25;
+    projectiles.push({x:P.x+P.w/2+P.face*4,y:P.y+3,vx:P.face*3.5,vy:0,
+      dmg:s.magicDmg,type:'fireball',life:2,fromPlayer:true,col:'#6080ff',sz:4});
+    sPart(P.x+P.w/2+P.face*6,P.y+3,5,'#6080ff',1);
+  }
+
+  // ── Projectiles ──
+  for(let i=projectiles.length-1;i>=0;i--){
+    const pr=projectiles[i];
+    pr.x+=pr.vx*fdt;pr.y+=pr.vy*fdt;pr.life-=dt;
+    if(pr.type==='boulder')pr.vy+=.1*fdt;
+    if(pr.life<=0||pr.x<camX-30||pr.x>camX+W+30){projectiles.splice(i,1);continue}
+
+    if(pr.fromPlayer){
+      // Hit enemies
+      for(let j=enemies.length-1;j>=0;j--){
+        const e=enemies[j];
+        if(boxHit(pr.x-2,pr.y-2,4,4,e.x,e.y,e.w,e.h)){
+          hitEnemy(e,pr.dmg);projectiles.splice(i,1);break;
+        }
+      }
+    }else{
+      // Hit player
+      if(P.invT<=0&&boxHit(pr.x-2,pr.y-2,4,4,P.x,P.y,P.w,P.h)){
+        P.hp-=pr.dmg;P.invT=.8;sPart(P.x+P.w/2,P.y+P.h/2,5,'#ff4040',1);
+        projectiles.splice(i,1);
+        if(P.hp<=0)die();
+      }
+    }
+  }
+
+  // ── Enemies ──
+  for(let i=enemies.length-1;i>=0;i--){
+    const e=enemies[i];
+    if(e.hp<=0)continue;
+    const cr=CREATURES[e.type];
+    e.phase+=dt*2;
+    if(e.stunT>0){e.stunT-=dt;continue}
+
+    // Regen
+    if(cr.regen)e.hp=Math.min(e.maxHp,e.hp+cr.regen*dt);
+
+    const dx=P.x-e.x,dist=Math.abs(dx);
+
+    // AI behaviors — all enemies patrol a fixed zone, only aggro within range
+    const patrolW=50; // how far from spawn point they patrol
+    const home=e.ex; // spawn x position
+    const fromHome=e.x-home;
+    const aggroRange=80+cr.tier*20; // detection range scales with tier
+    const inRange=dist<aggroRange;
+    const tooFar=Math.abs(fromHome)>patrolW+30; // too far from home
+
+    if(cr.ai==='run'||cr.ai==='walk'||cr.ai==='patrol'){
+      if(inRange&&!tooFar){
+        // Chase but stop at patrol boundary
+        e.vx=e.face*cr.spd;
+      }else{
+        // Patrol back and forth around spawn point
+        if(Math.abs(fromHome)>patrolW)e.face=fromHome>0?-1:1;
+        e.vx=e.face*cr.spd*.6;
+        // Occasionally reverse
+        if(Math.random()<.005)e.face*=-1;
+      }
+      e.x+=e.vx*fdt;
+      const gy=getGround(e.x+e.w/2);
+      if(gy<H+50){e.y=gy-e.h}
+      else{e.vx*=-1;e.face*=-1;e.x+=e.vx*fdt*2}
+      // Skeleton bone throw
+      if(cr.proj&&inRange){e.projCD=(e.projCD||0)+dt;
+        if(e.projCD>1.2){e.projCD=0;e.face=dx>0?1:-1;
+          projectiles.push({x:e.x+e.w/2,y:e.y+e.h/2,vx:e.face*2.5,vy:-1,dmg:cr.dmg,type:cr.proj,life:1.5,fromPlayer:false,col:'#d0d0a0'})}}
+    }else if(cr.ai==='hop'||cr.ai==='bounce'){
+      if(inRange&&!tooFar){
+        e.face=dx>0?1:-1;e.vx=e.face*cr.spd;
+        if(Math.random()<.015)e.vy=-3;
+      }else{
+        if(Math.abs(fromHome)>patrolW)e.face=fromHome>0?-1:1;
+        e.vx=e.face*cr.spd*.5;
+        if(Math.random()<.01)e.vy=-2;
+      }
+      e.vy+=GRAV*fdt;e.x+=e.vx*fdt;e.y+=e.vy*fdt;
+      const gy=getGround(e.x+e.w/2);
+      if(gy<H+50&&e.y+e.h>gy){e.y=gy-e.h;e.vy=cr.ai==='bounce'?-2.5:0}
+      else if(gy>=H+50&&e.y>GROUND-5){e.y=GROUND-e.h;e.vy=cr.ai==='bounce'?-2.5:0;e.vx*=-1;e.face*=-1}
+      if(cr.proj&&inRange){e.projCD=(e.projCD||0)+dt;e.face=dx>0?1:-1;
+        if(e.projCD>.8){e.projCD=0;projectiles.push({x:e.x+e.w/2,y:e.y+e.h/2,vx:e.face*2,vy:-.5,dmg:cr.dmg,type:cr.proj,life:1.5,fromPlayer:false,col:'#ff6020'})}}
+    }else if(cr.ai==='fly'){
+      // Flies a fixed figure-8 pattern around spawn
+      e.x=home+Math.sin(an*1.5+e.phase)*patrolW;
+      e.y=GROUND-e.h-8+Math.cos(an*2+e.phase)*10;
+      if(inRange)e.face=dx>0?1:-1;
+    }else if(cr.ai==='shoot'){
+      // Stationary archer — stays at spawn, only turns to face player
+      e.x+=(home-e.x)*.05; // drift back to spawn
+      if(inRange)e.face=dx>0?1:-1;
+      e.projCD=(e.projCD||0)+dt;
+      if(e.projCD>1.2&&inRange){e.projCD=0;
+        projectiles.push({x:e.x+e.w/2,y:e.y+4,vx:e.face*3,vy:0,dmg:cr.dmg,type:'arrow',life:2,fromPlayer:false,col:'#8a6a3a'})}
+      const gy=getGround(e.x+e.w/2);if(gy<H+50)e.y=gy-e.h;
+    }else if(cr.ai==='charge'){
+      // Charges in a straight line when player is close, then pauses
+      if(inRange&&dist<60&&!tooFar){e.vx=e.face*cr.spd*2.5}
+      else if(inRange){e.face=dx>0?1:-1;e.vx=e.face*cr.spd*.5}
+      else{e.vx*=.9;if(Math.abs(fromHome)>10)e.vx=(home-e.x)*.02}
+      e.x+=e.vx*fdt;const gy=getGround(e.x+e.w/2);if(gy<H+50)e.y=gy-e.h;
+    }else if(cr.ai==='jump'){
+      if(inRange&&!tooFar){
+        e.face=dx>0?1:-1;e.vx=e.face*cr.spd;
+        if(Math.random()<.02)e.vy=-3.5;
+      }else{
+        if(Math.abs(fromHome)>patrolW)e.face=fromHome>0?-1:1;
+        e.vx=e.face*cr.spd*.4;
+      }
+      e.vy+=GRAV*fdt;e.x+=e.vx*fdt;e.y+=e.vy*fdt;
+      const gy=getGround(e.x+e.w/2);if(gy<H+50&&e.y+e.h>gy){e.y=gy-e.h;e.vy=0}
+      if(cr.proj&&inRange){e.projCD=(e.projCD||0)+dt;e.face=dx>0?1:-1;
+        if(e.projCD>1){e.projCD=0;
+          projectiles.push({x:e.x+e.w/2,y:e.y+e.h/2,vx:e.face*2.5,vy:-1,dmg:cr.dmg,type:'dagger',life:1.5,fromPlayer:false,col:'#aaa'})}}
+    }else if(cr.ai==='smash'){
+      // Ogre — slow patrol, stomps when close
+      if(inRange&&!tooFar){e.face=dx>0?1:-1;e.vx=e.face*cr.spd}
+      else{if(Math.abs(fromHome)>patrolW)e.face=fromHome>0?-1:1;e.vx=e.face*cr.spd*.4}
+      e.x+=e.vx*fdt;const gy=getGround(e.x+e.w/2);if(gy<H+50)e.y=gy-e.h;
+    }else if(cr.ai==='mage'){
+      // Stays near spawn, runs away if player gets too close, shoots from range
+      if(dist<35){e.face=dx>0?-1:1;e.vx=e.face*cr.spd*1.5} // flee
+      else if(Math.abs(fromHome)>patrolW){e.vx=(home-e.x)*.03} // return home
+      else{e.vx*=.9}
+      e.x+=e.vx*fdt;const gy=getGround(e.x+e.w/2);if(gy<H+50)e.y=gy-e.h;
+      e.projCD=(e.projCD||0)+dt;if(e.projCD>1.5&&inRange){e.projCD=0;e.face=dx>0?1:-1;
+        const ang=Math.atan2(P.y-e.y,P.x-e.x);
+        projectiles.push({x:e.x+e.w/2,y:e.y+e.h/2,vx:Math.cos(ang)*2.5,vy:Math.sin(ang)*2.5,dmg:cr.dmg,type:'magic_bolt',life:2,fromPlayer:false,col:'#40ff80'})}
+    }else if(cr.ai==='lunge'){
+      // Werewolf — patrols, lunges when close then retreats
+      if(inRange&&dist<50&&!tooFar){e.face=dx>0?1:-1;e.vx=e.face*cr.spd*2.5;if(e.vy===0)e.vy=-2}
+      else if(tooFar){e.vx=(home-e.x)*.03}
+      else{if(Math.abs(fromHome)>patrolW)e.face=fromHome>0?-1:1;e.vx=e.face*cr.spd*.5}
+      e.vy+=GRAV*fdt;e.x+=e.vx*fdt;e.y+=e.vy*fdt;
+      const gy=getGround(e.x+e.w/2);if(gy<H+50&&e.y+e.h>gy){e.y=gy-e.h;e.vy=0}
+    }else if(cr.ai==='divebomb'||cr.ai==='swoop'){
+      // Circle above spawn point, dive when player is below
+      e.x=home+Math.sin(an*1.5+e.phase)*(patrolW*.8);
+      e.y=GROUND-e.h-15+Math.sin(an*2.5+e.phase)*8;
+      if(inRange&&dist<40){e.y+=(P.y-e.y)*.04} // brief dive
+      if(inRange)e.face=dx>0?1:-1;
+    }else if(cr.ai==='dragon'){
+      // Circles a wide area around spawn, breathes fire periodically
+      e.x=home+Math.sin(an*.5+e.phase)*(patrolW*1.2);
+      e.y=GROUND-e.h-12+Math.cos(an*.7+e.phase)*8;
+      if(inRange)e.face=dx>0?1:-1;
+      e.projCD=(e.projCD||0)+dt;
+      if(e.projCD>2.5&&inRange){e.projCD=0;
+        for(let f=0;f<3;f++)projectiles.push({x:e.x+e.w/2,y:e.y+e.h/2,vx:e.face*(2+f*.3),vy:-.5+f*.3,dmg:cr.dmg,type:'fire_lg',life:1.5,fromPlayer:false,col:'#ff4020'})}
+    }else if(cr.ai==='phase'){
+      // Wraith — drifts back and forth through spawn area
+      e.x=home+Math.sin(an*.8+e.phase)*patrolW;
+      e.y=GROUND-e.h-5+Math.sin(an*2+e.phase)*6;
+      if(cr.slow&&dist<40)P.vx*=.92;
+      if(inRange)e.face=dx>0?1:-1;
+    }else if(cr.ai==='throw'){
+      // Cyclops — slow patrol, throws boulders from range
+      if(inRange&&!tooFar){e.face=dx>0?1:-1;e.vx=e.face*cr.spd}
+      else{if(Math.abs(fromHome)>patrolW)e.face=fromHome>0?-1:1;e.vx=e.face*cr.spd*.3}
+      e.x+=e.vx*fdt;const gy=getGround(e.x+e.w/2);if(gy<H+50)e.y=gy-e.h;
+      e.projCD=(e.projCD||0)+dt;if(e.projCD>2.5&&inRange){e.projCD=0;
+        projectiles.push({x:e.x+e.w/2,y:e.y,vx:e.face*2,vy:-2,dmg:cr.dmg,type:'boulder',life:3,fromPlayer:false,col:'#8a7a60',sz:5})}
+    }else if(cr.ai==='necro'){
+      // Stays near spawn, teleports within zone if player gets close, summons from range
+      if(dist<40&&!tooFar){e.x=home+(Math.random()-.5)*patrolW*2;e.stunT=.3} // teleport within zone
+      else if(Math.abs(fromHome)>patrolW){e.vx=(home-e.x)*.03;e.x+=e.vx*fdt}
+      if(inRange)e.face=dx>0?1:-1;
+      e.projCD=(e.projCD||0)+dt;
+      if(e.projCD>1.8&&inRange){e.projCD=0;
+        const ang=Math.atan2(P.y-e.y,P.x-e.x);
+        projectiles.push({x:e.x+e.w/2,y:e.y+e.h/2,vx:Math.cos(ang)*2,vy:Math.sin(ang)*2,dmg:cr.dmg,type:'dark',life:2.5,fromPlayer:false,col:'#8040c0',sz:4})}
+      if(e.projCD>.5&&Math.random()<.003&&enemies.length<30){
+        const cr2=CREATURES.skeleton;
+        enemies.push({type:'skeleton',ex:e.x+e.face*20,x:e.x+e.face*20,y:GROUND-cr2.h,
+          vx:0,vy:0,hp:cr2.hp,maxHp:cr2.hp,w:cr2.w,h:cr2.h,face:e.face,atkCD:0,projCD:0,phase:Math.random()*6,stunT:0});
+      }
+      const gy=getGround(e.x+e.w/2);if(gy<H+50)e.y=gy-e.h;
+    }
+
+    // Contact damage
+    if(P.invT<=0&&boxHit(P.x,P.y,P.w,P.h,e.x,e.y,e.w,e.h)){
+      P.hp-=cr.dmg;P.invT=.8;P.vy=-2;P.vx=(P.x>e.x?2:-2);
+      sPart(P.x+P.w/2,P.y+P.h/2,6,'#ff4040',1.2);
+      if(P.hp<=0)die();
+    }
+  }
+  enemies=enemies.filter(e=>e.hp>0);
+
+  // ── Pickups ──
+  pickups.forEach(pk=>{
+    if(pk.got)return;
+    if(boxHit(P.x,P.y,P.w,P.h,pk.x-3,pk.y-6,6,6)){
+      pk.got=true;P.hp=Math.min(P.maxHp,P.hp+15);
+      sPart(pk.x,pk.y,6,'#ff4070',1);
+    }
+  });
+
+  // ── Level complete check ──
+  if(P.x>flagX){
+    nextLevel();return;
+  }
+
+  // ── Particles ──
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.x+=p.vx*fdt;p.y+=p.vy*fdt;p.vy+=.03*fdt;p.life-=dt;
+    if(p.life<=0)particles.splice(i,1);
+  }
+
+  // ── Camera ──
+  camX+=(P.x-W*.35-camX)*.08;
+  if(camX<0)camX=0;if(camX>lvlW-W)camX=lvlW-W;
+}
+
+function getGround(px){
+  let best=H+100;
+  platforms.forEach(p=>{if(px>=p.x&&px<=p.x+p.w)best=Math.min(best,p.y)});
+  return best;
+}
+
+function hitEnemy(e,dmg){
+  const cr=CREATURES[e.type];
+  const actualDmg=cr.armor?Math.ceil(dmg/2):dmg;
+  e.hp-=actualDmg;e.stunT=.15;
+  sPart(e.x+e.w/2,e.y+e.h/2,4,cr.col,1);
+  if(e.hp<=0){
+    totalKills++;
+    addXP(cr.xp);
+    sPart(e.x+e.w/2,e.y+e.h/2,10,cr.col,2);
+    // Slime split
+    if(cr.split){
+      for(let s=0;s<2;s++){
+        enemies.push({type:'rat',ex:e.x,x:e.x+(s?5:-5),y:e.y,vx:0,vy:-1,
+          hp:3,maxHp:3,w:5,h:4,face:s?1:-1,atkCD:0,projCD:0,phase:Math.random()*6,stunT:0});
+      }
+    }
+  }
+}
+
+function addXP(amount){
+  xp+=amount;
+  if(plvl<LVL_XP.length-1&&xp>=LVL_XP[plvl]){
+    plvl++;
+    const s=pStats();P.hp=s.maxHp;P.maxHp=s.maxHp;P.mana=s.manaMax;P.manaMax=s.manaMax;
+    // Show level up
+    document.getElementById('luTxt').textContent=`Level ${plvl}! HP:${s.maxHp} Sword:${s.swordDmg} Arrow:${s.arrowDmg} Magic:${s.magicDmg}`;
+    document.getElementById('lvlUp').style.display='block';
+    setTimeout(()=>document.getElementById('lvlUp').style.display='none',2000);
+  }
+}
+
+function die(){
+  P.dead=true;P.deadT=0;
+  // Spawn blood pool
+  for(let i=0;i<8;i++)deathParts.push({x:P.x+P.w/2+(Math.random()-.5)*4,y:P.y+P.h-2+Math.random()*2,vx:(Math.random()-.5)*.5,vy:0,life:6,sz:1+Math.random()*2});
+  setTimeout(()=>{
+    GS='over';
+    const sc=xp+lvl*100;
+    document.getElementById('goSc').textContent=sc;
+    document.getElementById('goSt').textContent=`Level ${plvl} · ${totalKills} kills · Reached: ${LEVELS[lvl].name}`;
+    document.getElementById('go').style.display='flex';
+    try{parent.postMessage({type:'eggplant_score',score:sc},'*')}catch(e){}
+  },2500);
+}
+
+function nextLevel(){
+  lvl++;
+  if(lvl>=LEVELS.length){
+    // WIN!
+    GS='win';
+    const sc=xp+lvl*100+P.hp*5;
+    document.getElementById('winSc').textContent='Score: '+sc;
+    document.getElementById('win').style.display='flex';
+    try{parent.postMessage({type:'eggplant_score',score:sc},'*')}catch(e){}
+    return;
+  }
+  buildLevel(lvl);P.x=40;P.y=GROUND-20;P.vx=0;P.vy=0;camX=0;
+}
+
+// ═══ DRAW ═══
+function draw(){
+  const an=performance.now()/1000;
+  const L=LEVELS[lvl];
+  // Sky
+  c.fillStyle=L.sky;c.fillRect(0,0,W,H);
+
+  // Background scenery (parallax)
+  c.fillStyle=L.bg;
+  for(let i=0;i<15;i++){
+    const bx=((i*120-camX*.2)%(W+100))-50;
+    const bh=10+Math.sin(i*7)*8;
+    c.fillRect(~~bx,GROUND-bh-5,8+i%4*3,bh+35);
+  }
+
+  c.save();c.translate(~~(-camX),0);
+
+  // ── Platforms ──
+  platforms.forEach(p=>{
+    if(p.x+p.w<camX-10||p.x>camX+W+10)return;
+    c.fillStyle=L.ground;c.fillRect(~~p.x,~~p.y,~~p.w,~~p.h);
+    // Surface
+    c.fillStyle=p.type==='platform'?'#8a8070':'#6a7a58';
+    c.fillRect(~~p.x,~~p.y,~~p.w,p.type==='platform'?2:2);
+  });
+
+  // ── Flag ──
+  c.fillStyle='#8a6a30';c.fillRect(~~flagX,GROUND-25,2,25);
+  c.fillStyle='#cc3030';c.fillRect(~~flagX+2,GROUND-25,10,7);
+
+  // ── Pickups ──
+  pickups.forEach(pk=>{
+    if(pk.got)return;
+    c.fillStyle='#ff4070';c.fillRect(~~(pk.x-2),~~(pk.y-5),4,5);
+    c.fillStyle='#ff6090';c.fillRect(~~(pk.x-1),~~(pk.y-6),2,2);
+  });
+
+  // ── Enemies ──
+  enemies.forEach(e=>{
+    if(e.hp<=0||e.x+e.w<camX-10||e.x>camX+W+10)return;
+    const cr=CREATURES[e.type];
+    drawStickEnemy(e,cr,an);
+    // HP bar
+    if(e.hp<e.maxHp){
+      c.fillStyle='#333';c.fillRect(~~e.x,~~(e.y-4),~~e.w,2);
+      c.fillStyle=e.hp>e.maxHp*.5?'#40cc40':'#cc4040';
+      c.fillRect(~~e.x,~~(e.y-4),~~(e.w*(e.hp/e.maxHp)),2);
+    }
+  });
+
+  // ── Projectiles ──
+  projectiles.forEach(pr=>{
+    c.fillStyle=pr.col||'#fff';
+    const sz=pr.sz||2;
+    c.fillRect(~~(pr.x-sz/2),~~(pr.y-sz/2),sz,sz);
+    if(pr.type==='fireball'||pr.type==='fire_lg'||pr.type==='dark'){
+      c.globalAlpha=.4;c.fillRect(~~(pr.x-sz),~~(pr.y-sz),sz*2,sz*2);c.globalAlpha=1;
+    }
+  });
+
+  // ── Player ──
+  if(!P.dead||P.deadT<.1){
+    const px=~~P.x,py=~~P.y;
+    const blink=P.invT>0&&Math.sin(P.invT*20)>0;
+    if(!blink&&!P.dead){
+      drawStickman(px,py,P.w,P.h,P.face,an,'#cc2020','#dd3030',P.swordAnim);
+    }
+    if(P.dead){
+      // Limp stickman on ground
+      drawDeadStickman(px,py,P.w,P.h);
+    }
+  }
+  // Blood pool
+  c.fillStyle='#8a1010';
+  deathParts.forEach(d=>{
+    c.globalAlpha=Math.min(1,d.life*.3);
+    c.beginPath();c.ellipse(~~d.x,~~d.y,~~d.sz,~~(d.sz*.4),0,0,Math.PI*2);c.fill();
+  });
+  c.globalAlpha=1;
+
+  // ── Particles ──
+  particles.forEach(p=>{const t=p.life/p.ml;c.fillStyle=p.col;c.globalAlpha=t;
+    c.fillRect(~~p.x,~~p.y,Math.max(1,~~(p.sz*t)),Math.max(1,~~(p.sz*t)));c.globalAlpha=1});
+
+  c.restore();
+
+  // ── HUD ──
+  // HP bar
+  c.fillStyle='#331010';c.fillRect(4,4,40,5);
+  c.fillStyle='#cc3030';c.fillRect(4,4,~~(40*(P.hp/P.maxHp)),5);
+  c.fillStyle='#fff';c.fillText(`${P.hp}/${P.maxHp}`,46,9);
+  // Mana bar
+  c.fillStyle='#101030';c.fillRect(4,11,40,4);
+  c.fillStyle='#4060cc';c.fillRect(4,11,~~(40*(P.mana/P.manaMax)),4);
+  // XP
+  c.fillStyle='#e8c870';c.fillText(`Lv${plvl} XP:${xp}`,4,22);
+  // Level name
+  c.fillStyle='#8a7a60';c.fillText(LEVELS[lvl].name,4,30);
+  // Kills
+  c.fillStyle='#a09080';c.fillText(`K:${totalKills}`,W-30,10);
+}
+
+// ═══ STICKMAN DRAWING ═══
+function drawStickman(x,y,w,h,face,an,bodyCol,headCol,swordAnim){
+  const cx=x+w/2,cy=y;
+  const walk=Math.abs(P.vx)>.2?Math.sin(an*10)*3:0;
+  // Head
+  c.fillStyle=headCol;c.beginPath();c.arc(cx,cy+2,3,0,Math.PI*2);c.fill();
+  // Body
+  c.strokeStyle=bodyCol;c.lineWidth=1;
+  c.beginPath();c.moveTo(cx,cy+4);c.lineTo(cx,cy+9);c.stroke();
+  // Arms
+  c.beginPath();c.moveTo(cx,cy+5);c.lineTo(cx-3,cy+7+walk*.3);c.stroke();
+  c.beginPath();c.moveTo(cx,cy+5);c.lineTo(cx+3,cy+7-walk*.3);c.stroke();
+  // Legs
+  c.beginPath();c.moveTo(cx,cy+9);c.lineTo(cx-2,cy+13+walk*.4);c.stroke();
+  c.beginPath();c.moveTo(cx,cy+9);c.lineTo(cx+2,cy+13-walk*.4);c.stroke();
+  // Sword
+  if(swordAnim>0){
+    c.strokeStyle='#c0c0c0';c.lineWidth=1;
+    const sa=swordAnim*Math.PI*.5;
+    c.beginPath();c.moveTo(cx+face*3,cy+5);
+    c.lineTo(cx+face*(3+Math.cos(sa)*10),cy+5-Math.sin(sa)*6);c.stroke();
+  }else{
+    c.strokeStyle='#808080';c.beginPath();c.moveTo(cx+face*3,cy+5);c.lineTo(cx+face*6,cy+8);c.stroke();
+  }
+}
+
+function drawDeadStickman(x,y,w,h){
+  const cx=x+w/2,cy=y+h-2;
+  c.strokeStyle='#aa1818';c.lineWidth=1;
+  // Collapsed body — horizontal
+  c.beginPath();c.moveTo(cx-5,cy);c.lineTo(cx+5,cy);c.stroke();
+  // Head
+  c.fillStyle='#cc2020';c.beginPath();c.arc(cx-6,cy-1,3,0,Math.PI*2);c.fill();
+  // Arms limp
+  c.strokeStyle='#aa1818';
+  c.beginPath();c.moveTo(cx-3,cy);c.lineTo(cx-5,cy+2);c.stroke();
+  c.beginPath();c.moveTo(cx+2,cy);c.lineTo(cx+4,cy+2);c.stroke();
+  // Legs limp
+  c.beginPath();c.moveTo(cx+3,cy);c.lineTo(cx+5,cy+3);c.stroke();
+  c.beginPath();c.moveTo(cx+4,cy);c.lineTo(cx+7,cy+1);c.stroke();
+  // X eyes
+  c.strokeStyle='#fff';c.lineWidth=.5;
+  c.beginPath();c.moveTo(cx-7,cy-2);c.lineTo(cx-5,cy);c.stroke();
+  c.beginPath();c.moveTo(cx-5,cy-2);c.lineTo(cx-7,cy);c.stroke();
+}
+
+function drawStickEnemy(e,cr,an){
+  const cx=~~(e.x+e.w/2);
+  const walk=Math.sin(an*6+e.phase)*2;
+  const sz=cr.w>10?1.5:cr.w>7?1.1:1;
+
+  if(cr.ai==='fly'||cr.ai==='divebomb'||cr.ai==='swoop'||cr.ai==='dragon'){
+    const cy=~~(e.y+e.h/2); // center vertically
+    c.fillStyle=cr.col;
+    c.fillRect(cx-~~(cr.w/2),cy-~~(cr.h/2),cr.w,cr.h);
+    const wy=Math.sin(an*8+e.phase)*3;
+    c.fillRect(cx-cr.w,cy+~~wy,cr.w/2,2);
+    c.fillRect(cx+cr.w/2,cy-~~wy,cr.w/2,2);
+    c.fillStyle=cr.tier>=4?'#ff4040':'#fff';
+    c.fillRect(cx+e.face*2-1,cy-1,2,1);
+    return;
+  }
+
+  // Calculate actual stickman drawn height so feet land at e.y + e.h
+  const headR=~~(2*sz);
+  const bodyLen=~~(5*sz);
+  const legLen=~~(4*sz);
+  const totalH=headR*2+1+bodyLen+legLen+2; // full drawn height
+  const cy=~~(e.y+e.h-totalH); // offset so feet touch bottom of hitbox
+
+  // Head
+  c.fillStyle=cr.col;
+  c.beginPath();c.arc(cx,cy+headR+1,headR,0,Math.PI*2);c.fill();
+  // Body
+  c.strokeStyle=cr.col;c.lineWidth=1;
+  c.beginPath();c.moveTo(cx,cy+headR*2+1);c.lineTo(cx,cy+headR*2+bodyLen);c.stroke();
+  // Arms
+  const armLen=~~(3*sz);
+  c.beginPath();c.moveTo(cx,cy+headR*2+2);c.lineTo(cx-armLen,cy+headR*2+3+walk*.3);c.stroke();
+  c.beginPath();c.moveTo(cx,cy+headR*2+2);c.lineTo(cx+armLen,cy+headR*2+3-walk*.3);c.stroke();
+  // Legs
+  c.beginPath();c.moveTo(cx,cy+headR*2+bodyLen);c.lineTo(cx-~~(2*sz),cy+headR*2+bodyLen+legLen+walk*.3);c.stroke();
+  c.beginPath();c.moveTo(cx,cy+headR*2+bodyLen);c.lineTo(cx+~~(2*sz),cy+headR*2+bodyLen+legLen-walk*.3);c.stroke();
+  // Eyes
+  c.fillStyle=cr.tier>=3?'#ff4040':'#000';
+  c.fillRect(cx-1,cy+headR,1,1);c.fillRect(cx+1,cy+headR,1,1);
+
+  // Weapon indicators
+  if(cr.ai==='shoot'||e.type==='archer'){
+    c.strokeStyle='#6a4a2a';c.beginPath();c.moveTo(cx+e.face*armLen,cy+headR*2+3);
+    c.lineTo(cx+e.face*(armLen+4),cy+headR*2+1);c.stroke();
+  }
+  if(e.type==='knight'){
+    c.strokeStyle='#a0a0b0';c.fillRect(cx-~~(2*sz),cy+1,~~(4*sz),~~(3*sz));
+  }
+  if(e.type==='necromancer'){
+    // Staff
+    c.strokeStyle='#6a3a8a';c.beginPath();c.moveTo(cx+e.face*3,cy);c.lineTo(cx+e.face*3,cy+cr.h);c.stroke();
+    c.fillStyle='#a040ff';c.beginPath();c.arc(cx+e.face*3,cy-1,2,0,Math.PI*2);c.fill();
+  }
+}
+
+// ═══ LOOP ═══
+function loop(ts){const dt=Math.min((ts-lt)/1000,.05);lt=ts;upd(dt);draw();
+  if(GS==='playing'||(P&&P.dead))requestAnimationFrame(loop)}
+</script></body></html>
